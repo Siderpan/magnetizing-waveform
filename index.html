@@ -552,6 +552,16 @@ $('ni').addEventListener('input', update);
 window.addEventListener('resize', () => { clearTimeout(tm); tm = setTimeout(update, 150); });
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', update);
 window.addEventListener('themechange', update);
+const fields = Array.from(document.querySelectorAll('.side input'));
+fields.forEach((el, i) => {
+  el.addEventListener('keydown', e => {
+    if (e.key !== 'Tab' || e.altKey || e.ctrlKey || e.metaKey) return;
+    e.preventDefault();
+    const n = fields.length, next = fields[(i + (e.shiftKey ? -1 : 1) + n) % n];
+    next.focus();
+  });
+  el.addEventListener('focus', () => { try { el.select(); } catch (err) {} });
+});
 rebuild();
 })();
 </script>
