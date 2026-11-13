@@ -622,7 +622,7 @@ function buildImage() {
   const stamp = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
   const pn = $('pName').value.trim();
   x.font = F(16); x.fillStyle = css('--muted'); x.textAlign = 'right';
-  x.fillText((pn ? '參數組：' + pn + '　' : '') + stamp, W - 32, 48);
+  x.fillText((pn ? '參數組：' + pn + '　' : '') + '僅供台達電子使用　' + stamp, W - 32, 48);
   x.strokeStyle = css('--line'); x.beginPath(); x.moveTo(32, 66); x.lineTo(W - 32, 66); x.stroke();
   const flux = (m.avgArea * 1e-4 * Math.PI / 180 * (v.id / 2 - v.probeD) / 1000 * v.h / 1000 * 1e6).toFixed(1) + ' μWb';
   // 左欄：參數 + 結果
