@@ -9,53 +9,53 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]){--nfill:#712B13;--sfill:#3C3489;--iron:#5F5E5A;--bg:#1b1b1a;--card:#252524;--text:#ecebe6;--muted:#a3a29b;--line:#383836;--line2:#4a4a47;--accent:#F0997B;--accent2:#AFA9EC;--ref:#888780;--err:#f97066;--chip:#30302e}}
 :root{color-scheme:light dark}:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark;--nfill:#712B13;--sfill:#3C3489;--iron:#5F5E5A;--bg:#1b1b1a;--card:#252524;--text:#ecebe6;--muted:#a3a29b;--line:#383836;--line2:#4a4a47;--accent:#F0997B;--accent2:#AFA9EC;--ref:#888780;--err:#f97066;--chip:#30302e}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-size:14px;line-height:1.5}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-size:16px;line-height:1.55}
 header{padding:20px 24px 8px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .tbtn{width:36px;height:36px;border-radius:8px;border:1px solid var(--line2);background:var(--card);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
 .tbtn:hover{border-color:var(--accent2)}
 .tbtn svg{width:18px;height:18px}
-h1{font-size:20px;font-weight:500;margin:0 0 4px}
+h1{font-size:24px;font-weight:500;margin:0 0 4px}
 .sub{color:var(--muted);font-size:13px;margin:0}
-.wrap{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;padding:12px 24px 32px}
+.wrap{display:grid;grid-template-columns:minmax(380px,0.62fr) minmax(0,1fr);gap:18px;padding:12px 24px 32px}
 @media (max-width:900px){.wrap{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
 .side .card{margin-bottom:12px}
-h2{font-size:14px;font-weight:500;margin:0 0 10px}
-.f{display:grid;grid-template-columns:1fr 84px;align-items:center;gap:8px;margin:6px 0}
-.f label{color:var(--muted);font-size:13px}
-.f input,.f select{width:100%;height:30px;border:1px solid var(--line2);border-radius:6px;background:transparent;color:var(--text);padding:0 8px;font-size:13px;text-align:right}
+h2{font-size:17px;font-weight:500;margin:0 0 12px}
+.f{display:grid;grid-template-columns:1fr 120px;align-items:center;gap:10px;margin:8px 0}
+.f label{color:var(--muted);font-size:15px}
+.f input,.f select{width:100%;height:36px;border:1px solid var(--line2);border-radius:6px;background:transparent;color:var(--text);padding:0 10px;font-size:16px;text-align:right}
 .f input:focus{outline:none;border-color:var(--accent2)}
-.err{color:var(--err);font-size:12px;min-height:0;margin-top:4px}
+.err{color:var(--err);font-size:14px;min-height:0;margin-top:4px}
 .ctrl{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .ctrl input[type=range]{flex:1;min-width:200px;accent-color:var(--accent)}
-.big{font-size:22px;font-weight:500}
-.reads{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:12px}
+.big{font-size:28px;font-weight:500}
+.reads{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:14px}
 .m{background:var(--chip);border-radius:8px;padding:8px 12px}
-.m .l{color:var(--muted);font-size:12px}
-.m .v{font-size:18px;font-weight:500}
+.m .l{color:var(--muted);font-size:14px}
+.m .v{font-size:21px;font-weight:500}
 .main>.card{margin-bottom:12px}
 canvas{width:100%;display:block}
-.opts{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:8px 0 0;align-items:center}
+.opts{display:flex;gap:16px;flex-wrap:wrap;font-size:14.5px;color:var(--muted);margin:8px 0 0;align-items:center}
 .opts label{display:flex;gap:6px;align-items:center;cursor:pointer}
 .leg{display:inline-block;width:18px;vertical-align:middle;margin-right:4px}
-.note{color:var(--muted);font-size:12.5px;line-height:1.7}
+.note{color:var(--muted);font-size:14.5px;line-height:1.7}
 .note li{margin:2px 0}
 .warn{color:var(--err)}
 .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
 @media (max-width:1100px){.two{grid-template-columns:1fr}}
 
 .lb{display:flex;align-items:center;gap:6px;min-width:0}
-.info{flex:none;width:18px;height:18px;border-radius:50%;border:1px solid var(--line2);background:transparent;color:var(--muted);font-size:11px;line-height:16px;padding:0;cursor:pointer;text-align:center}
+.info{flex:none;width:20px;height:20px;border-radius:50%;border:1px solid var(--line2);background:transparent;color:var(--muted);font-size:12px;line-height:18px;padding:0;cursor:pointer;text-align:center}
 .info:hover,.info:focus-visible{border-color:var(--accent2);color:var(--accent2);outline:none}
 .m .l{display:flex;align-items:center;gap:6px}
 h2{display:flex;align-items:center;gap:6px}
 .hov{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
 .hov[hidden]{display:none}
-.hbox{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;max-width:620px;width:100%;max-height:90vh;overflow:auto;padding:16px 20px}
+.hbox{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;max-width:680px;width:100%;max-height:90vh;overflow:auto;padding:16px 20px}
 .hhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.hhead h3{margin:0;font-size:17px;font-weight:500}
+.hhead h3{margin:0;font-size:19px;font-weight:500}
 .hclose{border:1px solid var(--line2);background:transparent;color:var(--text);border-radius:6px;width:30px;height:30px;font-size:18px;cursor:pointer}
-.hbody{font-size:14px;line-height:1.75}
+.hbody{font-size:15.5px;line-height:1.75}
 .hbody p{margin:6px 0}.hbody ul{margin:6px 0;padding-left:20px}
 .hbody strong{font-weight:500;color:var(--accent)}
 </style>
@@ -112,7 +112,7 @@ h2{display:flex;align-items:center;gap:6px}
 
 <div class="card">
 <h2>表面高斯波形 Bn<button type="button" class="info" data-k="bn" aria-label="說明：表面高斯波形 Bn">?</button></h2>
-<canvas id="cw" height="320"></canvas>
+<canvas id="cw" height="440" data-aspect="0.55"></canvas>
 <div class="opts">
 <label><input type="checkbox" id="oSat" checked><span class="leg" style="border-top:2px dashed var(--ref)"></span>飽和參考（120 kAT）</label><button type="button" class="info" data-k="satref" aria-label="說明：飽和參考">?</button>
 <label><input type="checkbox" id="oNo"><span class="leg" style="border-top:2px dotted var(--accent2)"></span>對照：充磁時不裝軛鐵</label><button type="button" class="info" data-k="compare" aria-label="說明：充磁時不裝軛鐵">?</button>
@@ -134,9 +134,9 @@ h2{display:flex;align-items:center;gap:6px}
 </div>
 
 <div class="two">
-<div class="card"><h2>峰值與充飽比例 vs 充磁強度<button type="button" class="info" data-k="curve" aria-label="說明：峰值與充飽比例 vs 充磁強度">?</button></h2><canvas id="cc" height="240"></canvas>
+<div class="card"><h2>峰值與充飽比例 vs 充磁強度<button type="button" class="info" data-k="curve" aria-label="說明：峰值與充飽比例 vs 充磁強度">?</button></h2><canvas id="cc" height="300"></canvas>
 <div class="opts"><span><span class="leg" style="border-top:2px solid var(--accent)"></span>峰值</span><span><span class="leg" style="border-top:2px dashed var(--accent2)"></span>充飽體積比例</span></div></div>
-<div class="card"><h2>磁化方向分佈（一對極的截面展開）<button type="button" class="info" data-k="magmap" aria-label="說明：磁化方向分佈（一對極的截面展開）">?</button></h2><canvas id="cm" height="240"></canvas>
+<div class="card"><h2>磁化方向分佈（一對極的截面展開）<button type="button" class="info" data-k="magmap" aria-label="說明：磁化方向分佈（一對極的截面展開）">?</button></h2><canvas id="cm" height="300"></canvas>
 <div class="opts"><span>箭頭長度與深淺 = 磁化程度 M/Br；上方灰帶為軛鐵，下方圓點為夾具槽內導體</span></div></div>
 </div>
 
@@ -398,7 +398,9 @@ function read() {
   return { v, e };
 }
 function setupCanvas(c) {
-  const dpr = window.devicePixelRatio || 1, w = c.clientWidth, h = parseFloat(c.getAttribute('height'));
+  const dpr = window.devicePixelRatio || 1, w = c.clientWidth;
+  const ar = parseFloat(c.dataset.aspect || 0);
+  const h = ar ? Math.round(Math.max(380, Math.min(620, w * ar))) : parseFloat(c.getAttribute('height'));
   c.width = w * dpr; c.height = h * dpr; c.style.height = h + 'px';
   const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); return { x, w, h };
 }
@@ -460,17 +462,17 @@ function drawWave(r, rn, met) {
   const N = r.wave.length - 1;
   const span = pair ? Math.round(N * 2 / v.poles) : N;
   const off = 0;
-  const L = 56, R = 14, T = 14, B = 34, pw = w - L - R, ph = h - T - B;
+  const L = 64, R = 16, T = 16, B = 38, pw = w - L - R, ph = h - T - B;
   let mx = 0; for (const arr of [r.wave, $('oSat').checked ? sat.wave : null, rn ? rn.wave : null]) if (arr) for (const a of arr) mx = Math.max(mx, Math.abs(a));
   mx = Math.max(mx * 1.1, 100);
-  const st = niceStep(mx, 3); mx = Math.ceil(mx / st) * st;
+  const st = niceStep(mx, 4); mx = Math.ceil(mx / st) * st;
   const X = i => L + pw * i / span, Y = val => T + ph / 2 - val / mx * ph / 2;
-  x.font = '12px sans-serif'; x.fillStyle = css('--muted'); x.strokeStyle = css('--line'); x.lineWidth = 1;
+  x.font = '13.5px sans-serif'; x.fillStyle = css('--muted'); x.strokeStyle = css('--line'); x.lineWidth = 1;
   for (let y = -mx; y <= mx + 1e-6; y += st) { x.beginPath(); x.moveTo(L, Y(y)); x.lineTo(L + pw, Y(y)); x.stroke(); x.textAlign = 'right'; x.fillText(Math.round(y), L - 6, Y(y) + 4); }
   const degSpan = pair ? 720 / v.poles : 360, dStep = niceStep(degSpan, 8);
   x.textAlign = 'center';
   for (let d = 0; d <= degSpan + 1e-6; d += dStep) { const px = L + pw * d / degSpan; x.beginPath(); x.moveTo(px, T); x.lineTo(px, T + ph); x.stroke(); x.fillText(d.toFixed(dStep < 1 ? 1 : 0) + '°', px, T + ph + 16); }
-  x.save(); x.translate(14, T + ph / 2); x.rotate(-Math.PI / 2); x.textAlign = 'center'; x.fillText('Bn (Gauss)', 0, 0); x.restore();
+  x.save(); x.translate(16, T + ph / 2); x.rotate(-Math.PI / 2); x.textAlign = 'center'; x.fillText('Bn (Gauss)', 0, 0); x.restore();
   x.strokeStyle = css('--line2'); x.beginPath(); x.moveTo(L, Y(0)); x.lineTo(L + pw, Y(0)); x.stroke();
   const line = (arr, color, dash, lw) => { x.strokeStyle = color; x.lineWidth = lw; x.setLineDash(dash); x.beginPath(); for (let i = 0; i <= span; i++) { const idx = ((i - off) % N + N) % N; const px = X(i), py = Y(arr[idx]); i ? x.lineTo(px, py) : x.moveTo(px, py); } x.stroke(); x.setLineDash([]); };
   if (met && met.poles.length) {
@@ -498,7 +500,7 @@ function drawCurve(ni) {
   let mx = 0; curve.forEach(c => mx = Math.max(mx, c.pk)); mx = Math.max(mx * 1.1, 100);
   const st = niceStep(mx, 4); mx = Math.ceil(mx / st) * st;
   const X = n => L + pw * n / NI_SAT, Y = val => T + ph - val / mx * ph, Y2 = f => T + ph - f * ph;
-  x.font = '12px sans-serif'; x.fillStyle = css('--muted'); x.strokeStyle = css('--line'); x.lineWidth = 1;
+  x.font = '13.5px sans-serif'; x.fillStyle = css('--muted'); x.strokeStyle = css('--line'); x.lineWidth = 1;
   for (let y = 0; y <= mx + 1e-6; y += st) { x.beginPath(); x.moveTo(L, Y(y)); x.lineTo(L + pw, Y(y)); x.stroke(); x.textAlign = 'right'; x.fillText(Math.round(y), L - 6, Y(y) + 4); }
   x.textAlign = 'left'; [0, 0.5, 1].forEach(f => x.fillText((f * 100) + '%', L + pw + 6, Y2(f) + 4));
   x.textAlign = 'center'; for (let n = 0; n <= NI_SAT; n += 30000) x.fillText((n / 1000) + ' kAT', X(n), T + ph + 18);
@@ -517,8 +519,8 @@ function drawMag(r) {
   const hasY = v.ty > 0;
   const L = 12, R = 12, T = hasY ? 26 : 12, B = 26, pw = w - L - R, ph = h - T - B;
   x.fillStyle = css('--chip'); x.fillRect(L, T, pw, ph);
-  if (hasY) { x.fillStyle = css('--line2'); x.fillRect(L, 6, pw, T - 10); x.fillStyle = css('--muted'); x.font = '11px sans-serif'; x.textAlign = 'left'; x.fillText('軛鐵', L + 4, 18); }
-  x.fillStyle = css('--muted'); x.font = '11px sans-serif'; x.textAlign = 'center';
+  if (hasY) { x.fillStyle = css('--line2'); x.fillRect(L, 6, pw, T - 10); x.fillStyle = css('--muted'); x.font = '13px sans-serif'; x.textAlign = 'left'; x.fillText('軛鐵', L + 4, 18); }
+  x.fillStyle = css('--muted'); x.font = '13px sans-serif'; x.textAlign = 'center';
   x.fillText('N', L + pw / 4, T + ph + 19); x.fillText('S', L + pw * 3 / 4, T + ph + 19);
   x.fillStyle = css('--line2');
   [0, pw / 2, pw].forEach(cx => { x.beginPath(); x.arc(L + cx, T + ph + 14, 5, 0, 2 * Math.PI); x.fill(); });
