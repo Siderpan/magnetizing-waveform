@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MQ 磁環充磁波形模擬</title>
+<style>
+:root{--nfill:#F5C4B3;--sfill:#CECBF6;--iron:#B4B2A9;--bg:#f7f6f2;--card:#ffffff;--text:#1f1e1c;--muted:#6b6a65;--line:#e3e1da;--line2:#cfcdc4;--accent:#D85A30;--accent2:#534AB7;--ref:#888780;--err:#b42318;--chip:#f1efe8}
+@media (prefers-color-scheme:dark){:root{--nfill:#712B13;--sfill:#3C3489;--iron:#5F5E5A;--bg:#1b1b1a;--card:#252524;--text:#ecebe6;--muted:#a3a29b;--line:#383836;--line2:#4a4a47;--accent:#F0997B;--accent2:#AFA9EC;--ref:#888780;--err:#f97066;--chip:#30302e}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;font-size:14px;line-height:1.5}
+header{padding:20px 24px 8px}
+h1{font-size:20px;font-weight:500;margin:0 0 4px}
+.sub{color:var(--muted);font-size:13px;margin:0}
+.wrap{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;padding:12px 24px 32px}
+@media (max-width:900px){.wrap{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.side .card{margin-bottom:12px}
+h2{font-size:14px;font-weight:500;margin:0 0 10px}
+.f{display:grid;grid-template-columns:1fr 84px;align-items:center;gap:8px;margin:6px 0}
+.f label{color:var(--muted);font-size:13px}
+.f input,.f select{width:100%;height:30px;border:1px solid var(--line2);border-radius:6px;background:transparent;color:var(--text);padding:0 8px;font-size:13px;text-align:right}
+.f input:focus{outline:none;border-color:var(--accent2)}
+.err{color:var(--err);font-size:12px;min-height:0;margin-top:4px}
+.ctrl{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ctrl input[type=range]{flex:1;min-width:200px;accent-color:var(--accent)}
+.big{font-size:22px;font-weight:500}
+.reads{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:12px}
+.m{background:var(--chip);border-radius:8px;padding:8px 12px}
+.m .l{color:var(--muted);font-size:12px}
+.m .v{font-size:18px;font-weight:500}
+.main>.card{margin-bottom:12px}
+canvas{width:100%;display:block}
+.opts{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:8px 0 0;align-items:center}
+.opts label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.leg{display:inline-block;width:18px;vertical-align:middle;margin-right:4px}
+.note{color:var(--muted);font-size:12.5px;line-height:1.7}
+.note li{margin:2px 0}
+.warn{color:var(--err)}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+@media (max-width:1100px){.two{grid-template-columns:1fr}}
+
+.lb{display:flex;align-items:center;gap:6px;min-width:0}
+.info{flex:none;width:18px;height:18px;border-radius:50%;border:1px solid var(--line2);background:transparent;color:var(--muted);font-size:11px;line-height:16px;padding:0;cursor:pointer;text-align:center}
+.info:hover,.info:focus-visible{border-color:var(--accent2);color:var(--accent2);outline:none}
+.m .l{display:flex;align-items:center;gap:6px}
+h2{display:flex;align-items:center;gap:6px}
+.hov{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.hov[hidden]{display:none}
+.hbox{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:12px;max-width:620px;width:100%;max-height:90vh;overflow:auto;padding:16px 20px}
+.hhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.hhead h3{margin:0;font-size:17px;font-weight:500}
+.hclose{border:1px solid var(--line2);background:transparent;color:var(--text);border-radius:6px;width:30px;height:30px;font-size:18px;cursor:pointer}
+.hbody{font-size:14px;line-height:1.75}
+.hbody p{margin:6px 0}.hbody ul{margin:6px 0;padding-left:20px}
+.hbody strong{font-weight:500;color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+<h1>等方向性 MQ 磁環：充磁強度與表面高斯波形</h1>
+<p class="sub">多極充磁（夾具在內側、軛鐵在外側，充磁時即裝上），量測磁環內表面徑向磁場 Bn。半解析模型，用於趨勢判斷與方案比較。點各名詞旁的 ? 看定義與圖示。</p>
+</header>
+<div class="wrap">
+<aside class="side">
+<div class="card"><h2>磁環</h2>
+<div class="f"><div class="lb"><label for="poles">極數</label><button type="button" class="info" data-k="poles" aria-label="說明：極數">?</button></div><input id="poles" type="number" step="2" min="2" value="8"></div>
+<div class="f"><div class="lb"><label for="id">內徑 (mm)</label><button type="button" class="info" data-k="id" aria-label="說明：內徑 (mm)">?</button></div><input id="id" type="number" step="0.1" value="40"></div>
+<div class="f"><div class="lb"><label for="od">外徑 (mm)</label><button type="button" class="info" data-k="od" aria-label="說明：外徑 (mm)">?</button></div><input id="od" type="number" step="0.1" value="46"></div>
+<div class="f"><div class="lb"><label for="h">高度 (mm)</label><button type="button" class="info" data-k="h" aria-label="說明：高度 (mm)">?</button></div><input id="h" type="number" step="0.1" value="10"></div>
+</div>
+<div class="card"><h2>軛鐵（充磁時即裝上）</h2>
+<div class="f"><div class="lb"><label for="ty">軛鐵厚度 (mm，0 = 無)</label><button type="button" class="info" data-k="ty" aria-label="說明：軛鐵厚度 (mm，0 = 無)">?</button></div><input id="ty" type="number" step="0.1" min="0" value="1.5"></div>
+<div class="f"><div class="lb"><label for="gap">軛鐵與磁環間隙 (mm)</label><button type="button" class="info" data-k="gap" aria-label="說明：軛鐵與磁環間隙 (mm)">?</button></div><input id="gap" type="number" step="0.01" min="0" value="0.05"></div>
+<div class="f"><div class="lb"><label for="bs">軛鐵飽和磁通密度 Bs (T)</label><button type="button" class="info" data-k="bs" aria-label="說明：軛鐵飽和磁通密度 Bs (T)">?</button></div><input id="bs" type="number" step="0.1" min="0.5" value="2.0"></div>
+</div>
+<div class="card"><h2>探棒位置</h2>
+<div class="f"><div class="lb"><label for="probeD">距磁環內表面 (mm)</label><button type="button" class="info" data-k="probeD" aria-label="說明：距磁環內表面 (mm)">?</button></div><input id="probeD" type="number" step="0.1" min="0" value="0.5"></div>
+<div class="f"><div class="lb"><label for="probeZ">軸向高度，自底面起 (mm)</label><button type="button" class="info" data-k="probeZ" aria-label="說明：軸向高度，自底面起 (mm)">?</button></div><input id="probeZ" type="number" step="0.1" min="0" value="5"></div>
+</div>
+<div class="card"><h2>材料</h2>
+<div class="f"><div class="lb"><label for="br">Br (T)</label><button type="button" class="info" data-k="br" aria-label="說明：Br (T)">?</button></div><input id="br" type="number" step="0.01" value="0.70"></div>
+<div class="f"><div class="lb"><label for="hcj">Hcj (kOe)</label><button type="button" class="info" data-k="hcj" aria-label="說明：Hcj (kOe)">?</button></div><input id="hcj" type="number" step="0.1" value="9"></div>
+</div>
+<div class="card"><h2>充磁夾具</h2>
+<div class="f"><div class="lb"><label for="fixGap">夾具與磁環間隙 (mm)</label><button type="button" class="info" data-k="fixGap" aria-label="說明：夾具與磁環間隙 (mm)">?</button></div><input id="fixGap" type="number" step="0.05" min="0" value="0.2"></div>
+<div class="f"><div class="lb"><label for="depth">導體中心距夾具表面 (mm)</label><button type="button" class="info" data-k="depth" aria-label="說明：導體中心距夾具表面 (mm)">?</button></div><input id="depth" type="number" step="0.1" min="0.1" value="1.0"></div>
+<div class="f"><div class="lb"><label for="turns">每槽匝數（換算電流用）</label><button type="button" class="info" data-k="turns" aria-label="說明：每槽匝數（換算電流用）">?</button></div><input id="turns" type="number" step="1" min="1" value="4"></div>
+</div>
+<div class="err" id="err" role="alert"></div>
+</aside>
+
+<main class="main">
+<div class="card">
+<h2>充磁強度<button type="button" class="info" data-k="ni" aria-label="說明：充磁強度">?</button></h2>
+<div class="ctrl">
+<input type="range" id="ni" min="0" max="120000" step="500" value="60000" aria-label="充磁安匝數">
+<div><span class="big" id="niOut">60.0</span> <span style="color:var(--muted)">kAT（每槽安匝）</span></div>
+</div>
+<div class="reads">
+<div class="m"><div class="l">對應峰值電流<button type="button" class="info" data-k="rI" aria-label="說明：對應峰值電流">?</button></div><div class="v" id="rI">-</div></div>
+<div class="m"><div class="l">極中心內表面場強 μ0H<button type="button" class="info" data-k="rH" aria-label="說明：極中心內表面場強 μ0H">?</button></div><div class="v" id="rH">-</div></div>
+<div class="m"><div class="l">已充飽體積（≥95%）<button type="button" class="info" data-k="rS" aria-label="說明：已充飽體積（≥95%）">?</button></div><div class="v" id="rS">-</div></div>
+<div class="m"><div class="l">峰值 / 飽和峰值<button type="button" class="info" data-k="rP" aria-label="說明：峰值 / 飽和峰值">?</button></div><div class="v" id="rP">-</div></div>
+<div class="m"><div class="l">充磁時軛鐵作用比例<button type="button" class="info" data-k="rE" aria-label="說明：充磁時軛鐵作用比例">?</button></div><div class="v" id="rE">-</div></div>
+</div>
+</div>
+
+<div class="card">
+<h2>表面高斯波形 Bn<button type="button" class="info" data-k="bn" aria-label="說明：表面高斯波形 Bn">?</button></h2>
+<canvas id="cw" height="320"></canvas>
+<div class="opts">
+<label><input type="checkbox" id="oSat" checked><span class="leg" style="border-top:2px dashed var(--ref)"></span>飽和參考（120 kAT）</label><button type="button" class="info" data-k="satref" aria-label="說明：飽和參考">?</button>
+<label><input type="checkbox" id="oNo"><span class="leg" style="border-top:2px dotted var(--accent2)"></span>對照：充磁時不裝軛鐵</label><button type="button" class="info" data-k="compare" aria-label="說明：充磁時不裝軛鐵">?</button>
+<label>顯示範圍 <select id="oRange" style="height:26px;border:1px solid var(--line2);border-radius:6px;background:transparent;color:var(--text)"><option value="all">全周 360°</option><option value="pair">一對極</option></select></label>
+</div>
+<div class="reads">
+<div class="m"><div class="l">峰值<button type="button" class="info" data-k="mPk" aria-label="說明：峰值">?</button></div><div class="v" id="mPk">-</div></div>
+<div class="m"><div class="l">極中心值<button type="button" class="info" data-k="mC" aria-label="說明：極中心值">?</button></div><div class="v" id="mC">-</div></div>
+<div class="m"><div class="l">極中心 / 峰值<button type="button" class="info" data-k="mH" aria-label="說明：極中心 / 峰值">?</button></div><div class="v" id="mH">-</div></div>
+<div class="m"><div class="l">基波振幅<button type="button" class="info" data-k="m1" aria-label="說明：基波振幅">?</button></div><div class="v" id="m1">-</div></div>
+<div class="m"><div class="l">THD<button type="button" class="info" data-k="mT" aria-label="說明：THD">?</button></div><div class="v" id="mT">-</div></div>
+<div class="m"><div class="l">軛鐵磁通密度（估）<button type="button" class="info" data-k="mY" aria-label="說明：軛鐵磁通密度（估）">?</button></div><div class="v" id="mY">-</div></div>
+<div class="m"><div class="l">單極面積（平均）<button type="button" class="info" data-k="aA" aria-label="說明：單極面積（平均）">?</button></div><div class="v" id="aA">-</div></div>
+<div class="m"><div class="l">單極面積 / 飽和<button type="button" class="info" data-k="aR" aria-label="說明：單極面積 / 飽和">?</button></div><div class="v" id="aR">-</div></div>
+<div class="m"><div class="l">N / S 單極面積<button type="button" class="info" data-k="aNS" aria-label="說明：N / S 單極面積">?</button></div><div class="v" id="aNS">-</div></div>
+<div class="m"><div class="l">單極磁通（估）<button type="button" class="info" data-k="aF" aria-label="說明：單極磁通（估）">?</button></div><div class="v" id="aF">-</div></div>
+</div>
+<div class="opts"><span><span class="leg" style="height:10px;background:var(--accent);opacity:.18;border-radius:2px"></span>陰影 = 單極面積範圍（相鄰兩過零點之間 ∫|Bn|dθ）；0° 為 N 極起點</span></div>
+</div>
+
+<div class="two">
+<div class="card"><h2>峰值與充飽比例 vs 充磁強度<button type="button" class="info" data-k="curve" aria-label="說明：峰值與充飽比例 vs 充磁強度">?</button></h2><canvas id="cc" height="240"></canvas>
+<div class="opts"><span><span class="leg" style="border-top:2px solid var(--accent)"></span>峰值</span><span><span class="leg" style="border-top:2px dashed var(--accent2)"></span>充飽體積比例</span></div></div>
+<div class="card"><h2>磁化方向分佈（一對極的截面展開）<button type="button" class="info" data-k="magmap" aria-label="說明：磁化方向分佈（一對極的截面展開）">?</button></h2><canvas id="cm" height="240"></canvas>
+<div class="opts"><span>箭頭長度與深淺 = 磁化程度 M/Br；上方灰帶為軛鐵，下方圓點為夾具槽內導體</span></div></div>
+</div>
+
+<div class="card note">
+<h2>模型假設與限制</h2>
+<ul>
+<li>截面以 2D 多層磁荷法求解，軸向有限高度以精確積分修正（K1 Bessel 函數）；磁環 μr 取 1。</li>
+<li>夾具以槽內線電流表示（脈衝充磁時夾具鐵心視為已飽和），NI 為每槽安匝數；未計脈衝渦流。</li>
+<li>軛鐵在量測時視為理想導磁；充磁時只能承載 Bs × 厚度的磁通，超過部分視同空氣，所以大電流時軛鐵的「拉直」作用會下降（見「充磁時軛鐵作用比例」）。</li>
+<li>MQ 初始充磁曲線：M/Br = 1 − exp(−(H/H0)^1.8)，H0 ≈ 1.33 Hcj（約 1 T 充到 50%、2 T 約 92%、3 T 約 99%）；磁化方向沿充磁磁場方向。</li>
+<li>量測時磁環內側為空氣（未裝定子）；寬極時波形偏平頂，欠充時磁化先從導體附近（極邊緣）開始，所以會出現馬鞍形或牛角。</li>
+<li>單極面積 = 相鄰兩過零點之間 |Bn| 對機械角的積分（G·°），即旋轉掃描式高斯計常用的「極面積」；單極磁通以探棒高度處的波形 × 探棒半徑 × 磁環高度粗估。</li>
+<li>數值適合比較趨勢與方案，絕對值請以實測校正：飽和峰值用 Br 對齊，NI 與充磁電壓的對應用實測曲線對齊。</li>
+</ul>
+</div>
+</main>
+</div>
+<script>
+// 2D 電荷法模型：等方向性磁環多極充磁 + 外側軛鐵
+// 幾何單位 mm，磁場單位 T (μ0H)
+const MODEL = (() => {
+  const NL = 20, NT = 256, KMAX = 61;
+  const KS = []; for (let k = 1; k <= KMAX; k += 2) KS.push(k);
+
+  // e^x·K1(x)（Numerical Recipes 近似）
+  function k1s(x) {
+    if (x <= 2) {
+      const y = x * x / 4, t = (x / 3.75) ** 2;
+      const i1 = x * (0.5 + t * (0.87890594 + t * (0.51498869 + t * (0.15084934 + t * (0.02658733 + t * (0.00301532 + t * 0.00032411))))));
+      const k1 = (Math.log(x / 2) * i1) + (1 / x) * (1 + y * (0.15443144 + y * (-0.67278579 + y * (-0.18156897 + y * (-0.01919402 + y * (-0.00110404 + y * (-0.00004686)))))));
+      return k1 * Math.exp(x);
+    }
+    const y = 2 / x;
+    return (1 / Math.sqrt(x)) * (1.25331414 + y * (0.23498619 + y * (-0.0365562 + y * (0.01504268 + y * (-0.00780353 + y * (0.00325614 + y * (-0.00068245)))))));
+  }
+  // 有限高度片狀磁荷 / 無限長的比值；d：探棒到磁荷面距離，z1<0<z2：磁環軸向範圍相對探棒
+  function axial(k, d, z1, z2) {
+    d = Math.max(d, 1e-3);
+    const x = k * d, u1 = Math.asinh(z1 / d), u2 = Math.asinh(z2 / d), M = 96, h = (u2 - u1) / M;
+    let s = 0;
+    for (let i = 0; i <= M; i++) {
+      const u = u1 + i * h, c = Math.cosh(u), xx = x * c;
+      const v = k1s(xx) * Math.exp(-(xx - x));
+      s += v * (i === 0 || i === M ? 1 : (i % 2 ? 4 : 2));
+    }
+    return Math.max(0, Math.min(1, (x / Math.PI) * s * h / 3));
+  }
+
+  // MQ 初始充磁曲線（漸進型）：m = 1 - exp(-(H/H0)^a)，H0 ≈ 1.33·Hcj
+  function sCurve(muH, HcjT) {
+    const H0 = 1.33 * HcjT;
+    return 1 - Math.exp(-Math.pow(Math.max(muH, 0) / H0, 1.8));
+  }
+
+  // 夾具：槽內線電流（鐵心視為飽和），每槽安匝 = 1 A·turn 時的磁位諧波
+  function fixtureCoeffs() {
+    const F = {};
+    for (const k of KS) F[k] = Math.sin(k * Math.PI / 2) / (Math.PI * k);
+    return F;
+  }
+
+  // 幾何前處理：充磁磁場的單位分佈
+  function prepare(g, yokeOnMagnetize) {
+    const p = g.poles / 2, Ri = g.id / 2, Ro = g.od / 2;
+    const hasYoke = g.ty > 0;
+    const Ry = Ro + g.gap;
+    const Rf = Ri - g.fixGap - g.depth;
+    const useY = hasYoke && yokeOnMagnetize;
+    const F = fixtureCoeffs();
+    const layers = [];
+    const dr = (Ro - Ri) / NL;
+    const cosT = [], sinT = [];
+    for (const k of KS) {
+      const c = new Float64Array(NT), s = new Float64Array(NT);
+      for (let i = 0; i < NT; i++) { const e = i * 2 * Math.PI / NT; c[i] = Math.cos(k * e); s[i] = Math.sin(k * e); }
+      cosT.push(c); sinT.push(s);
+    }
+    const hField = (r, Y) => {
+      const Hr = new Float64Array(NT), Ht = new Float64Array(NT);
+      KS.forEach((k, ki) => {
+        const n = k * p;
+        const D = 1;
+        const A = Math.pow(Rf / r, n), B = Y * Math.pow(r * Rf / (Ry * Ry), n);
+        const cr = F[k] * n / r * (A + B) / D, ct = F[k] * n / r * (A - B) / D;
+        for (let i = 0; i < NT; i++) { Hr[i] += cr * cosT[ki][i]; Ht[i] += ct * sinT[ki][i]; }
+      });
+      return { Hr, Ht };
+    };
+    for (let j = 0; j < NL; j++) {
+      const lo = Ri + j * dr, hi = lo + dr, rm = (lo + hi) / 2;
+      const h0 = hField(rm, 0);
+      const h1 = useY ? hField(rm, 1) : h0;
+      layers.push({ lo, hi, rm, dr, Hr0: h0.Hr, Ht0: h0.Ht, Hr1: h1.Hr, Ht1: h1.Ht });
+    }
+    // 單位：ψ 振幅 1 A 時，極中心內表面 μ0H (T)
+    const U = 4e-7 * Math.PI * 1000;
+    const refOf = Y => { let ref = 0; KS.forEach(k => {
+      const n = k * p, D = 1;
+      ref += F[k] * n / Ri * (Math.pow(Rf / Ri, n) + Y * Math.pow(Ri * Rf / (Ry * Ry), n)) / D; }); return ref * U; };
+    const ref0 = refOf(0), ref1 = useY ? refOf(1) : ref0;
+    layers.forEach(L => { for (const a of [L.Hr0, L.Ht0]) for (let i = 0; i < NT; i++) a[i] *= U;
+      if (useY) for (const a of [L.Hr1, L.Ht1]) for (let i = 0; i < NT; i++) a[i] *= U; });
+    // 理想軛鐵在充磁時的磁通密度（ψ 振幅 1 A）
+    let byu = 0;
+    if (useY) { let phi = 0; KS.forEach(k => { const n = k * p, D = 1;
+      const hr = F[k] * n / Ry * 2 * Math.pow(Rf / Ry, n) / D * U; phi += hr * Ry * 2 / n * Math.sin(k * Math.PI / 2); });
+      byu = Math.abs(phi) / 2 / g.ty; }
+    // 量測格林係數（含軸向端部修正）：每層、每階、三個磁荷面
+    const rp = Ri - g.probeD, Ym = hasYoke ? 1 : 0, z1 = -g.probeZ, z2 = g.h - g.probeZ;
+    layers.forEach(L => {
+      L.G = KS.map(k => {
+        const n = k * p;
+        return [L.hi, L.lo, L.rm].map(a => {
+          const kk = n / ((a + rp) / 2);
+          const t1 = Math.pow(rp / a, n - 1) * axial(kk, a - rp, z1, z2);
+          const ai = Ry * Ry / a;
+          const t2 = Ym * Math.pow(a * rp / (Ry * Ry), n - 1) * Math.pow(a / Ry, 2) * axial(n / ((ai + rp) / 2), ai - rp, z1, z2);
+          return -0.5 * (t1 - t2);
+        });
+      });
+    });
+    return { g, p, Ri, Ro, Ry, hasYoke, useY, layers, ref0, ref1, byu, cosT, sinT };
+  }
+
+  // 給定充磁磁場 (T)，求磁化分佈與量測波形
+  // NI：每槽安匝數 (A·turn)
+  function solve(pre, NI, mat, opt = {}) {
+    const { g, p, Ri, Ry, hasYoke, useY, layers, ref0, ref1, byu, cosT, sinT } = pre;
+    const scale = NI, BrT = mat.br, HcjT = mat.hcj / 10;
+    const byIdeal = byu * scale;
+    const eta = useY ? (byIdeal > (g.bs || 2) ? (g.bs || 2) / byIdeal : 1) : 0;
+    const ref = ref0 + eta * (ref1 - ref0);
+    let satW = 0, totW = 0;
+    const Brk = new Float64Array(KS.length);
+    const Byk = new Float64Array(KS.length); // 軛鐵內表面徑向磁場
+    const mags = [];
+    for (const L of layers) {
+      const Mr = new Float64Array(NT), Mt = new Float64Array(NT), Mm = new Float64Array(NT);
+      for (let i = 0; i < NT; i++) {
+        const hr = (L.Hr0[i] + eta * (L.Hr1[i] - L.Hr0[i])) * scale, ht = (L.Ht0[i] + eta * (L.Ht1[i] - L.Ht0[i])) * scale, h = Math.hypot(hr, ht);
+        const m = h > 1e-12 ? BrT * sCurve(h, HcjT) : 0;
+        Mm[i] = m / BrT; totW += L.rm; if (Mm[i] > 0.95) satW += L.rm; Mr[i] = h > 1e-12 ? m * hr / h : 0; Mt[i] = h > 1e-12 ? m * ht / h : 0;
+      }
+      if (opt.keepMag) mags.push({ rm: L.rm, Mr, Mt, Mm });
+      KS.forEach((k, ki) => {
+        const n = k * p;
+        let a = 0, b = 0;
+        for (let i = 0; i < NT; i++) { a += Mr[i] * cosT[ki][i]; b += Mt[i] * sinT[ki][i]; }
+        const Mrk = a * 2 / NT, Mtk = b * 2 / NT;
+        const src = [[L.hi, Mrk], [L.lo, -Mrk], [L.rm, -(Mrk + n * Mtk) * L.dr / L.rm]];
+        const G = L.G[ki];
+        src.forEach(([aa, sg], si) => {
+          Brk[ki] += sg * G[si];
+          if (hasYoke) Byk[ki] += sg * Math.pow(aa / Ry, n + 1);
+        });
+      });
+    }
+    // 波形（機械角 0..360；0° = N 極起點）
+    const NW = 1441, wave = new Float64Array(NW);
+    for (let i = 0; i < NW; i++) {
+      const th = i / (NW - 1) * 2 * Math.PI;
+      let v = 0; KS.forEach((k, ki) => { v += Brk[ki] * Math.cos(k * p * (th - Math.PI / g.poles)); });
+      wave[i] = v * 1e4; // Gauss
+    }
+    // 軛鐵磁通密度估算（每單位軸長，2D）
+    let yokeB = null;
+    if (hasYoke) {
+      let phiPole = 0; // T*mm
+      KS.forEach((k, ki) => { const n = k * p; phiPole += Byk[ki] * Ry * 2 / n * Math.sin(k * Math.PI / 2); });
+      yokeB = Math.abs(phiPole) / 2 / g.ty;
+    }
+    const harm = KS.map((k, ki) => ({ k, amp: Brk[ki] * 1e4 }));
+    return { wave, harm, yokeB, mags, satFrac: satW / totW, hCenter: ref * scale, eta, byIdeal };
+  }
+
+  function metrics(res, poles) {
+    const w = res.wave, N = w.length - 1;
+    let pk = 0; for (const v of w) pk = Math.max(pk, Math.abs(v));
+    const ppp = N / poles; // 每極點數
+    const cI = Math.round(ppp / 2), c0 = w[cI];
+    let above = 0; for (let i = 0; i < Math.round(ppp); i++) { const idx = i % N; if (Math.abs(w[idx]) >= 0.9 * pk) above++; }
+    const h1 = Math.abs(res.harm[0].amp);
+    let hs = 0; for (let i = 1; i < res.harm.length; i++) hs += res.harm[i].amp ** 2;
+    // 單極面積：相鄰過零點之間 ∫|Bn| dθ（G·°）
+    const dDeg = 360 / N, zc = [];
+    const eps = 1e-6 * Math.max(pk, 1e-9);
+    const sg = v => (v > eps ? 1 : v < -eps ? -1 : 0);
+    for (let i = 0; i < N; i++) {
+      const a0 = w[i], a1 = w[(i + 1) % N];
+      if (sg(a0) === 0 && sg(w[(i + N - 1) % N]) !== sg(a1) && sg(a1) !== 0) { zc.push(i); continue; }
+      if (sg(a0) !== 0 && sg(a1) !== 0 && sg(a0) !== sg(a1)) zc.push(i + a0 / (a0 - a1));
+    }
+    const pl = [];
+    if (zc.length >= 2) {
+      const val = x => { const i = Math.floor(x) % N, f = x - Math.floor(x); return w[i] * (1 - f) + w[(i + 1) % N] * f; };
+      for (let j = 0; j < zc.length; j++) {
+        const s0 = zc[j], s1 = j + 1 < zc.length ? zc[j + 1] : zc[0] + N;
+        const steps = Math.max(8, Math.ceil((s1 - s0) * 2)), hstep = (s1 - s0) / steps;
+        let area = 0; for (let q = 0; q < steps; q++) area += Math.abs(val(s0 + (q + 0.5) * hstep)) * hstep * dDeg;
+        const mid = (s0 + s1) / 2 % N;
+        pl.push({ start: s0 * dDeg, end: s1 * dDeg, area, sign: Math.sign(val(mid)) });
+      }
+    }
+    const avgArea = pl.length ? pl.reduce((s, p) => s + p.area, 0) / pl.length : 0;
+    const nA = pl.filter(p => p.sign > 0), sA = pl.filter(p => p.sign < 0);
+    const avg = arr => arr.length ? arr.reduce((s, p) => s + p.area, 0) / arr.length : 0;
+    return { peak: pk, center: Math.abs(c0), horn: pk > 0 ? Math.abs(c0) / pk : 0, flat: above / Math.round(ppp), h1, thd: h1 > 0 ? Math.sqrt(hs) / h1 : 0,
+      poles: pl, avgArea, areaN: avg(nA), areaS: avg(sA) };
+  }
+
+  return { prepare, solve, metrics, sCurve, KS, NT, NL };
+})();
+if (typeof module !== 'undefined') module.exports = MODEL;
+
+</script>
+<script>
+(() => {
+const ids = ['poles','id','od','h','ty','gap','bs','probeD','probeZ','br','hcj','fixGap','depth','turns'];
+const $ = id => document.getElementById(id);
+const NI_SAT = 120000;
+try { const s = JSON.parse(localStorage.getItem('mqwave2') || 'null'); if (s) { ids.forEach(k => { if (s[k] != null) $(k).value = s[k]; }); if (s.ni != null) $('ni').value = s.ni; } } catch (e) {}
+let state = null;
+
+function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function read() {
+  const v = {}; ids.forEach(k => v[k] = parseFloat($(k).value));
+  const e = [];
+  if (!(v.poles >= 2) || v.poles % 2) e.push('極數須為 ≥2 的偶數');
+  if (!(v.id > 0) || !(v.od > v.id)) e.push('外徑須大於內徑，且內徑 > 0');
+  if (!(v.h > 0)) e.push('高度須 > 0');
+  if (!(v.ty >= 0)) e.push('軛鐵厚度須 ≥ 0');
+  if (!(v.gap >= 0)) e.push('軛鐵間隙須 ≥ 0');
+  if (!(v.probeD >= 0) || v.probeD >= v.id / 2) e.push('探棒距離須 ≥ 0 且小於內半徑');
+  if (!(v.probeZ >= 0) || v.probeZ > v.h) e.push('探棒軸向位置須在 0 到高度之間');
+  if (!(v.br > 0)) e.push('Br 須 > 0');
+  if (!(v.hcj > 0)) e.push('Hcj 須 > 0');
+  if (!(v.fixGap >= 0) || v.fixGap >= v.id / 2) e.push('夾具間隙須 ≥ 0 且小於內半徑');
+  if (!(v.depth > 0) || v.fixGap + v.depth >= v.id / 2) e.push('導體深度須 > 0，且夾具間隙 + 導體深度小於內半徑');
+  if (!(v.bs > 0)) e.push('軛鐵 Bs 須 > 0');
+  if (!(v.turns >= 1)) e.push('匝數須 ≥ 1');
+  return { v, e };
+}
+function setupCanvas(c) {
+  const dpr = window.devicePixelRatio || 1, w = c.clientWidth, h = parseFloat(c.getAttribute('height'));
+  c.width = w * dpr; c.height = h * dpr; c.style.height = h + 'px';
+  const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); return { x, w, h };
+}
+function niceStep(range, n) { const r = range / n, p = Math.pow(10, Math.floor(Math.log10(r))), f = r / p; return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * p; }
+
+function rebuild() {
+  const { v, e } = read();
+  $('err').innerHTML = e.join('<br>');
+  if (e.length) { state = null; return; }
+  const g = { poles: v.poles, id: v.id, od: v.od, h: v.h, ty: v.ty, gap: v.gap, bs: v.bs, probeD: v.probeD, probeZ: v.probeZ, fixGap: v.fixGap, depth: v.depth };
+  const mat = { br: v.br, hcj: v.hcj };
+  const pre = MODEL.prepare(g, true);
+  const preNo = v.ty > 0 ? MODEL.prepare(g, false) : null;
+  const sat = MODEL.solve(pre, NI_SAT, mat);
+  const satM = MODEL.metrics(sat, v.poles);
+  const curve = [];
+  for (let ni = 0; ni <= NI_SAT; ni += 3000) { const r = MODEL.solve(pre, ni, mat); curve.push({ ni, pk: MODEL.metrics(r, v.poles).peak, sf: r.satFrac }); }
+  state = { v, g, mat, pre, preNo, sat, satM, curve };
+  update();
+}
+
+function update() {
+  const ni = parseFloat($('ni').value);
+  $('niOut').textContent = (ni / 1000).toFixed(1);
+  try { const s = {}; ids.forEach(k => s[k] = $(k).value); s.ni = ni; localStorage.setItem('mqwave2', JSON.stringify(s)); } catch (e) {}
+  if (!state) return;
+  const { v, pre, preNo, mat, sat, satM } = state;
+  const r = MODEL.solve(pre, ni, mat, { keepMag: true });
+  const m = MODEL.metrics(r, v.poles);
+  const rn = ($('oNo').checked && preNo) ? MODEL.solve(preNo, ni, mat) : null;
+  $('rI').textContent = (ni / v.turns / 1000).toFixed(2) + ' kA';
+  $('rH').textContent = r.hCenter.toFixed(2) + ' T（' + (r.hCenter * 10).toFixed(1) + ' kOe）';
+  $('rS').textContent = (r.satFrac * 100).toFixed(0) + '%';
+  $('rE').textContent = v.ty > 0 ? (r.eta * 100).toFixed(0) + '%' + (r.eta < 0.5 ? '（已飽和）' : '') : '無軛鐵';
+  $('rP').textContent = satM.peak > 0 ? (m.peak / satM.peak * 100).toFixed(1) + '%' : '-';
+  $('mPk').textContent = m.peak.toFixed(0) + ' G';
+  $('mC').textContent = m.center.toFixed(0) + ' G';
+  $('mH').textContent = m.peak > 1 ? m.horn.toFixed(2) + (m.horn < 0.9 ? '（牛角）' : m.horn < 0.97 ? '（微凹）' : '') : '-';
+  $('m1').textContent = m.h1.toFixed(0) + ' G';
+  $('mT').textContent = m.peak > 1 ? (m.thd * 100).toFixed(0) + '%' : '-';
+  const yb = $('mY');
+  if (r.yokeB == null) { yb.textContent = '無軛鐵'; yb.className = 'v'; }
+  else { yb.textContent = r.yokeB.toFixed(2) + ' T' + (r.yokeB > 1.5 ? '（偏高，易飽和）' : ''); yb.className = 'v' + (r.yokeB > 1.5 ? ' warn' : ''); }
+  $('aA').textContent = m.avgArea > 0 ? Math.round(m.avgArea).toLocaleString() + ' G·°' : '-';
+  $('aR').textContent = satM.avgArea > 0 ? (m.avgArea / satM.avgArea * 100).toFixed(1) + '%' : '-';
+  $('aNS').textContent = m.areaN > 0 ? Math.round(m.areaN).toLocaleString() + ' / ' + Math.round(m.areaS).toLocaleString() : '-';
+  const rp = (v.id / 2 - v.probeD) / 1000;
+  const flux = m.avgArea * 1e-4 * (Math.PI / 180) * rp * (v.h / 1000) * 1e6;
+  $('aF').textContent = m.avgArea > 0 ? flux.toFixed(1) + ' μWb' : '-';
+  drawWave(r, rn, m);
+  drawCurve(ni);
+  drawMag(r);
+}
+
+function drawWave(r, rn, met) {
+  const { x, w, h } = setupCanvas($('cw'));
+  const { v, sat } = state;
+  const pair = $('oRange').value === 'pair';
+  const N = r.wave.length - 1;
+  const span = pair ? Math.round(N * 2 / v.poles) : N;
+  const off = 0;
+  const L = 56, R = 14, T = 14, B = 34, pw = w - L - R, ph = h - T - B;
+  let mx = 0; for (const arr of [r.wave, $('oSat').checked ? sat.wave : null, rn ? rn.wave : null]) if (arr) for (const a of arr) mx = Math.max(mx, Math.abs(a));
+  mx = Math.max(mx * 1.1, 100);
+  const st = niceStep(mx, 3); mx = Math.ceil(mx / st) * st;
+  const X = i => L + pw * i / span, Y = val => T + ph / 2 - val / mx * ph / 2;
+  x.font = '12px sans-serif'; x.fillStyle = css('--muted'); x.strokeStyle = css('--line'); x.lineWidth = 1;
+  for (let y = -mx; y <= mx + 1e-6; y += st) { x.beginPath(); x.moveTo(L, Y(y)); x.lineTo(L + pw, Y(y)); x.stroke(); x.textAlign = 'right'; x.fillText(Math.round(y), L - 6, Y(y) + 4); }
+  const degSpan = pair ? 720 / v.poles : 360, dStep = niceStep(degSpan, 8);
+  x.textAlign = 'center';
+  for (let d = 0; d <= degSpan + 1e-6; d += dStep) { const px = L + pw * d / degSpan; x.beginPath(); x.moveTo(px, T); x.lineTo(px, T + ph); x.stroke(); x.fillText(d.toFixed(dStep < 1 ? 1 : 0) + '°', px, T + ph + 16); }
+  x.save(); x.translate(14, T + ph / 2); x.rotate(-Math.PI / 2); x.textAlign = 'center'; x.fillText('Bn (Gauss)', 0, 0); x.restore();
+  x.strokeStyle = css('--line2'); x.beginPath(); x.moveTo(L, Y(0)); x.lineTo(L + pw, Y(0)); x.stroke();
+  const line = (arr, color, dash, lw) => { x.strokeStyle = color; x.lineWidth = lw; x.setLineDash(dash); x.beginPath(); for (let i = 0; i <= span; i++) { const idx = ((i - off) % N + N) % N; const px = X(i), py = Y(arr[idx]); i ? x.lineTo(px, py) : x.moveTo(px, py); } x.stroke(); x.setLineDash([]); };
+  if (met && met.poles.length) {
+    const ctr = N / v.poles / 2;
+    const toView = deg => { let i = deg / 360 * N + off; return i; };
+    let pick = null;
+    for (const pl of met.poles) for (const sh of [-N, 0, N]) { const a = toView(pl.start) + sh, b = toView(pl.end) + sh; if (a <= ctr && b >= ctr) pick = [a, b]; }
+    if (pick) {
+      x.fillStyle = css('--accent'); x.globalAlpha = 0.18; x.beginPath();
+      const a = Math.max(0, pick[0]), b = Math.min(span, pick[1]);
+      x.moveTo(X(a), Y(0));
+      for (let i = Math.ceil(a); i <= Math.floor(b); i++) { const idx = ((i - off) % N + N) % N; x.lineTo(X(i), Y(r.wave[idx])); }
+      x.lineTo(X(b), Y(0)); x.closePath(); x.fill(); x.globalAlpha = 1;
+    }
+  }
+  if ($('oSat').checked) line(sat.wave, css('--ref'), [6, 4], 1.5);
+  if (rn) line(rn.wave, css('--accent2'), [2, 3], 1.8);
+  line(r.wave, css('--accent'), [], 2.2);
+}
+
+function drawCurve(ni) {
+  const { x, w, h } = setupCanvas($('cc'));
+  const { curve } = state;
+  const L = 52, R = 40, T = 12, B = 34, pw = w - L - R, ph = h - T - B;
+  let mx = 0; curve.forEach(c => mx = Math.max(mx, c.pk)); mx = Math.max(mx * 1.1, 100);
+  const st = niceStep(mx, 4); mx = Math.ceil(mx / st) * st;
+  const X = n => L + pw * n / NI_SAT, Y = val => T + ph - val / mx * ph, Y2 = f => T + ph - f * ph;
+  x.font = '12px sans-serif'; x.fillStyle = css('--muted'); x.strokeStyle = css('--line'); x.lineWidth = 1;
+  for (let y = 0; y <= mx + 1e-6; y += st) { x.beginPath(); x.moveTo(L, Y(y)); x.lineTo(L + pw, Y(y)); x.stroke(); x.textAlign = 'right'; x.fillText(Math.round(y), L - 6, Y(y) + 4); }
+  x.textAlign = 'left'; [0, 0.5, 1].forEach(f => x.fillText((f * 100) + '%', L + pw + 6, Y2(f) + 4));
+  x.textAlign = 'center'; for (let n = 0; n <= NI_SAT; n += 30000) x.fillText((n / 1000) + ' kAT', X(n), T + ph + 18);
+  x.strokeStyle = css('--accent'); x.lineWidth = 2; x.beginPath(); curve.forEach((c, i) => i ? x.lineTo(X(c.ni), Y(c.pk)) : x.moveTo(X(c.ni), Y(c.pk))); x.stroke();
+  x.strokeStyle = css('--accent2'); x.setLineDash([5, 4]); x.lineWidth = 1.6; x.beginPath(); curve.forEach((c, i) => i ? x.lineTo(X(c.ni), Y2(c.sf)) : x.moveTo(X(c.ni), Y2(c.sf))); x.stroke(); x.setLineDash([]);
+  x.strokeStyle = css('--line2'); x.beginPath(); x.moveTo(X(ni), T); x.lineTo(X(ni), T + ph); x.stroke();
+  const i0 = Math.min(curve.length - 2, Math.floor(ni / 3000)), t = ni / 3000 - i0;
+  const pk = curve[i0].pk * (1 - t) + curve[i0 + 1].pk * t;
+  x.fillStyle = css('--accent'); x.beginPath(); x.arc(X(ni), Y(pk), 5, 0, 2 * Math.PI); x.fill();
+}
+
+function drawMag(r) {
+  const { x, w, h } = setupCanvas($('cm'));
+  const { v } = state;
+  const NT = MODEL.NT, mags = r.mags;
+  const hasY = v.ty > 0;
+  const L = 12, R = 12, T = hasY ? 26 : 12, B = 26, pw = w - L - R, ph = h - T - B;
+  x.fillStyle = css('--chip'); x.fillRect(L, T, pw, ph);
+  if (hasY) { x.fillStyle = css('--line2'); x.fillRect(L, 6, pw, T - 10); x.fillStyle = css('--muted'); x.font = '11px sans-serif'; x.textAlign = 'left'; x.fillText('軛鐵', L + 4, 18); }
+  x.fillStyle = css('--muted'); x.font = '11px sans-serif'; x.textAlign = 'center';
+  x.fillText('N', L + pw / 4, T + ph + 19); x.fillText('S', L + pw * 3 / 4, T + ph + 19);
+  x.fillStyle = css('--line2');
+  [0, pw / 2, pw].forEach(cx => { x.beginPath(); x.arc(L + cx, T + ph + 14, 5, 0, 2 * Math.PI); x.fill(); });
+  const cols = 28, rows = Math.min(7, mags.length);
+  const cw = pw / cols, rh = ph / rows;
+  const ac = css('--accent'), mu = css('--ref');
+  for (let ri = 0; ri < rows; ri++) {
+    const li = Math.round((ri + 0.5) / rows * mags.length - 0.5);
+    const mg = mags[li];
+    for (let ci = 0; ci < cols; ci++) {
+      const e = -Math.PI / 2 + (ci + 0.5) / cols * 2 * Math.PI;
+      const idx = ((Math.round(e / (2 * Math.PI) * NT)) % NT + NT) % NT;
+      const mr = mg.Mr[idx], mt = mg.Mt[idx], mm = mg.Mm[idx];
+      const len = Math.min(cw, rh) * 0.42 * Math.max(mm, 0.08);
+      const ang = Math.atan2(mr, mt);
+      const cx = L + (ci + 0.5) * cw, cy = T + ph - (ri + 0.5) * rh;
+      const dx = Math.cos(ang) * len, dy = -Math.sin(ang) * len;
+      x.strokeStyle = mm > 0.05 ? ac : mu; x.fillStyle = x.strokeStyle; x.globalAlpha = 0.25 + 0.75 * mm; x.lineWidth = 1.6;
+      x.beginPath(); x.moveTo(cx - dx, cy - dy); x.lineTo(cx + dx, cy + dy); x.stroke();
+      const hl = Math.max(3, len * 0.5), a2 = Math.atan2(dy, dx);
+      x.beginPath(); x.moveTo(cx + dx, cy + dy); x.lineTo(cx + dx - hl * Math.cos(a2 - 0.45), cy + dy - hl * Math.sin(a2 - 0.45)); x.lineTo(cx + dx - hl * Math.cos(a2 + 0.45), cy + dy - hl * Math.sin(a2 + 0.45)); x.closePath(); x.fill();
+      x.globalAlpha = 1;
+    }
+  }
+}
+
+let tm = null;
+ids.forEach(k => $(k).addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(rebuild, 200); }));
+$('ni').addEventListener('input', update);
+['oSat', 'oNo', 'oRange'].forEach(k => $(k).addEventListener('change', update));
+window.addEventListener('resize', () => { clearTimeout(tm); tm = setTimeout(update, 150); });
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', update);
+rebuild();
+})();
+</script>
+<script>
+(() => {
+// ---------- SVG 繪圖工具 ----------
+const DEFS = `<defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--text)"/></marker>
+<marker id="aha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--accent)"/></marker>
+<marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--accent2)"/></marker>
+</defs>`;
+const svg = (w, h, inner) => `<svg viewBox="0 0 ${w} ${h}" width="100%" style="max-width:${w}px;display:block;margin:4px auto 10px" role="img">${DEFS}${inner}</svg>`;
+const T = (x, y, s, o = {}) => `<text x="${x}" y="${y}" font-size="${o.fs || 12}" text-anchor="${o.a || 'start'}" style="fill:var(${o.c || '--muted'})${o.b ? ';font-weight:500' : ''}">${s}</text>`;
+const Ln = (x1, y1, x2, y2, o = {}) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" style="stroke:var(${o.c || '--line2'});stroke-width:${o.w || 1}${o.d ? ';stroke-dasharray:' + o.d : ''}"${o.m ? ` marker-end="url(#${o.m})"` : ''}${o.ms ? ` marker-start="url(#${o.ms})"` : ''}/>`;
+const R = (x, y, w, h, fill, o = {}) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${o.rx || 0}" style="fill:var(${fill})${o.s ? ';stroke:var(' + o.s + ');stroke-width:' + (o.sw || 1.5) : ''}${o.op ? ';opacity:' + o.op : ''}"/>`;
+const P = (d, o = {}) => `<path d="${d}" style="fill:${o.f ? 'var(' + o.f + ')' : 'none'};stroke:${o.c ? 'var(' + o.c + ')' : 'none'};stroke-width:${o.w || 1.5}${o.d ? ';stroke-dasharray:' + o.d : ''}${o.op ? ';opacity:' + o.op : ''}"${o.m ? ` marker-end="url(#${o.m})"` : ''}/>`;
+const C = (x, y, r, fill, o = {}) => `<circle cx="${x}" cy="${y}" r="${r}" style="fill:var(${fill})${o.s ? ';stroke:var(' + o.s + ');stroke-width:' + (o.sw || 1.5) : ''}"/>`;
+// 尺寸線（兩端箭頭）
+const dim = (x1, y1, x2, y2, label, o = {}) => Ln(x1, y1, x2, y2, { c: o.c || '--accent', w: 1.4, m: o.c === '--accent2' ? 'ahb' : 'aha', ms: o.c === '--accent2' ? 'ahb' : 'aha' }) + (label ? T(o.lx ?? (x1 + x2) / 2 + (o.dx || 0), o.ly ?? (y1 + y2) / 2 + (o.dy || 0), label, { c: o.c || '--accent', a: o.a || 'middle', b: 1 }) : '');
+const pol = (cx, cy, r, a) => [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+const sector = (cx, cy, r1, r2, a0, a1) => {
+  const [x1, y1] = pol(cx, cy, r2, a0), [x2, y2] = pol(cx, cy, r2, a1), [x3, y3] = pol(cx, cy, r1, a1), [x4, y4] = pol(cx, cy, r1, a0);
+  const lg = a1 - a0 > Math.PI ? 1 : 0;
+  return `M${x1.toFixed(1)},${y1.toFixed(1)} A${r2},${r2} 0 ${lg} 1 ${x2.toFixed(1)},${y2.toFixed(1)} L${x3.toFixed(1)},${y3.toFixed(1)} A${r1},${r1} 0 ${lg} 0 ${x4.toFixed(1)},${y4.toFixed(1)} Z`;
+};
+
+// ---------- 俯視圖：磁環截面 ----------
+function dTop(hl) {
+  const cx = 150, cy = 140, Ro = 100, Ri = 74, Ry = 116, P8 = 8;
+  let s = '';
+  s += `<circle cx="${cx}" cy="${cy}" r="${(Ry + Ro + 3) / 2}" style="fill:none;stroke:var(--iron);stroke-width:${Ry - Ro - 3}${hl === 'yoke' ? ';stroke:var(--accent)' : ''}"/>`;
+  for (let i = 0; i < P8; i++) {
+    const a0 = -Math.PI / 2 + i * 2 * Math.PI / P8, a1 = a0 + 2 * Math.PI / P8;
+    s += P(sector(cx, cy, Ri, Ro, a0, a1), { f: i % 2 ? '--sfill' : '--nfill', c: '--card', w: 1 });
+    const [tx, ty] = pol(cx, cy, (Ri + Ro) / 2, (a0 + a1) / 2);
+    s += T(tx, ty + 4, i % 2 ? 'S' : 'N', { a: 'middle', c: '--text', fs: 11 });
+  }
+  if (hl === 'poles') {
+    s += P(sector(cx, cy, Ri, Ro, -Math.PI / 2, -Math.PI / 4), { c: '--accent', w: 2.5 });
+    const [ax, ay] = pol(cx, cy, Ry + 12, -Math.PI / 2), [bx, by] = pol(cx, cy, Ry + 12, -Math.PI / 4);
+    s += `<path d="M${ax},${ay} A${Ry + 12},${Ry + 12} 0 0 1 ${bx.toFixed(1)},${by.toFixed(1)}" style="fill:none;stroke:var(--accent);stroke-width:1.4" marker-end="url(#aha)" marker-start="url(#aha)"/>`;
+    s += T(cx + 70, cy - Ry - 14, '1 極 = 360° / 極數', { c: '--accent', b: 1 });
+  }
+  if (hl === 'id') s += dim(cx - Ri, cy, cx + Ri, cy, '內徑 ID', { dy: -8 });
+  if (hl === 'od') {
+    const yy = cy + Ry + 16;
+    s += Ln(cx - Ro, cy, cx - Ro, yy + 4, { d: '3 3' }) + Ln(cx + Ro, cy, cx + Ro, yy + 4, { d: '3 3' });
+    s += dim(cx - Ro, yy, cx + Ro, yy, '外徑 OD', { dy: -6 });
+  }
+  if (hl === 'hm') {
+    const [x1, y1] = pol(cx, cy, Ri, Math.PI * 0.15), [x2, y2] = pol(cx, cy, Ro, Math.PI * 0.15);
+    s += dim(x1, y1, x2, y2, '', {}) + T(x2 + 8, y2 + 14, '磁厚 hm', { c: '--accent', b: 1 });
+  }
+  const [px, py] = pol(cx, cy, Ri - 12, -Math.PI / 2 + Math.PI / 8);
+  s += R(px - 5, py - 3, 10, 6, hl === 'probe' ? '--accent' : '--muted');
+  s += T(310, 40, '圖例', { c: '--text', b: 1 });
+  s += R(310, 52, 14, 12, '--nfill') + T(332, 62, 'N 極');
+  s += R(310, 74, 14, 12, '--sfill') + T(332, 84, 'S 極');
+  s += R(310, 96, 14, 12, '--iron') + T(332, 106, '軛鐵（外側鋼殼）');
+  s += R(312, 120, 10, 6, '--muted') + T(332, 128, '探棒（霍爾元件）');
+  s += T(310, 160, '俯視：沿軸向看磁環', { fs: 11 });
+  return svg(520, 290, s);
+}
+
+// ---------- 展開截面：夾具 / 磁環 / 軛鐵 ----------
+function dSection(hl, opt = {}) {
+  const x0 = 30, W = 460, pw = W / 4;
+  const yY = 22, yYh = 26, gY = 12, yM = yY + yYh + gY, mH = 60, gF = 14, yF = yM + mH + gF, fH = 80;
+  let s = '';
+  const meas = opt.measure;
+  if (!opt.noYoke) {
+    s += R(x0, yY, W, yYh, '--iron', hl === 'yoke' ? { s: '--accent', sw: 2.5 } : {});
+    s += T(x0 + W + 6, yY + 17, '軛鐵', { fs: 11 });
+  }
+  for (let i = 0; i < 4; i++) {
+    s += R(x0 + i * pw, yM, pw, mH, i % 2 ? '--sfill' : '--nfill', { s: '--card', sw: 1 });
+    if (!opt.arrows) s += T(x0 + i * pw + pw / 2, yM + 36, i % 2 ? 'S' : 'N', { a: 'middle', c: '--text', b: 1 });
+  }
+  s += T(x0 + W + 6, yM + 34, '磁環', { fs: 11 });
+  if (opt.arrows) {
+    for (let i = 0; i < 16; i++) {
+      const xc = x0 + (i + 0.5) * W / 16, e = (i + 0.5) / 16 * 4 * Math.PI;
+      const tx = Math.cos(e) * (opt.radial ? 0.25 : 1), ty = Math.sin(e);
+      const L = 18, n = Math.hypot(tx, ty), dx = tx / n * L, dy = ty / n * L;
+      s += Ln(xc - dx / 2, yM + mH / 2 - dy / 2, xc + dx / 2, yM + mH / 2 + dy / 2, { c: '--accent', w: 1.8, m: 'aha' });
+    }
+  }
+  if (!meas) {
+    s += R(x0, yF, W, fH, '--iron');
+    s += T(x0 + W + 6, yF + 30, '夾具', { fs: 11 });
+    for (let k = 0; k <= 4; k++) {
+      const xc = x0 + k * pw, sw = 26;
+      const xa = Math.max(x0, xc - sw / 2), xb = Math.min(x0 + W, xc + sw / 2);
+      s += R(xa, yF, xb - xa, 52, '--card');
+      if (k > 0 && k < 4) {
+        if (hl === 'turns') {
+          [[-5, 14], [5, 14], [-5, 24], [5, 24]].forEach(([dx, dy]) => { s += C(xc + dx, yF + dy, 4.3, '--accent2'); });
+        } else {
+          s += C(xc, yF + 20, 8, '--accent2');
+          s += k % 2 ? `<circle cx="${xc}" cy="${yF + 20}" r="2" style="fill:var(--card)"/>` : Ln(xc - 4, yF + 16, xc + 4, yF + 24, { c: '--card', w: 1.6 }) + Ln(xc + 4, yF + 16, xc - 4, yF + 24, { c: '--card', w: 1.6 });
+        }
+      }
+    }
+  }
+  const py = yM + mH + (opt.pd || 26);
+  if (meas) {
+    s += R(x0 + pw / 2 - 7, py - 4, 14, 8, hl === 'probeD' || hl === 'bn' ? '--accent' : '--muted');
+    s += T(x0 + pw / 2, py + 20, '探棒', { fs: 11, a: 'middle' });
+    s += T(x0 + W + 6, yM + mH + 30, '空氣（內側）', { fs: 11 });
+    if (hl === 'probeD') s += dim(x0 + pw / 2 - 26, yM + mH, x0 + pw / 2 - 26, py, '距離 d', { a: 'end', dx: -6, dy: 4 });
+    if (hl === 'bn') {
+      s += Ln(x0 + pw / 2, py - 6, x0 + pw / 2, py - 30, { c: '--accent', w: 2.2, m: 'aha' });
+      s += T(x0 + pw / 2 + 10, py - 16, 'Bn：垂直表面（徑向）分量', { c: '--accent', b: 1 });
+      s += Ln(x0 + pw / 2 + 8, py + 2, x0 + pw / 2 + 40, py + 2, { c: '--muted', w: 1.4, d: '3 3', m: 'ah' });
+      s += T(x0 + pw / 2 + 46, py + 6, '切向分量（不量）', { fs: 11 });
+    }
+  }
+  if (hl === 'fixGap') s += dim(x0 + pw / 2, yM + mH, x0 + pw / 2, yF, '', {}) + T(x0 + pw / 2 + 10, yM + mH - 6, '夾具與磁環間隙', { c: '--accent', b: 1 });
+  if (hl === 'depth') {
+    const xc = x0 + 2 * pw;
+    s += Ln(xc - 40, yF, xc + 60, yF, { c: '--accent', d: '3 3' });
+    s += dim(xc + 22, yF, xc + 22, yF + 20, '', {}) + T(xc + 30, yF + 16, '導體中心深度', { c: '--accent', b: 1 });
+    s += Ln(xc + 22, yF + 20, xc + 8, yF + 20, { c: '--accent', d: '2 2' });
+  }
+  if (hl === 'turns') s += T(x0 + 2 * pw + 18, yF + 70, '同一槽內 N 匝導線（示意 4 匝）', { c: '--accent2', b: 1, a: 'middle' });
+  if (hl === 'gap') s += dim(x0 + pw / 2, yY + yYh, x0 + pw / 2, yM, '', {}) + T(x0 + pw / 2 + 10, yM + 15, '軛鐵與磁環間隙', { c: '--accent', b: 1 });
+  if (hl === 'yoke') s += dim(x0 + W - 30, yY, x0 + W - 30, yY + yYh, '', {}) + T(x0 + W - 40, yY + 17, '軛鐵厚度', { c: '--accent', b: 1, a: 'end' });
+  if (hl === 'hcenter') {
+    s += C(x0 + pw / 2, yM + mH, 5, '--accent');
+    s += T(x0 + pw / 2, yM + mH - 8, '極中心・內表面', { c: '--accent', b: 1, a: 'middle', fs: 11 });
+    s += T(x0 + pw, yF + 70, '↑ 導體附近（極邊緣）場強更高', { c: '--text', a: 'middle', fs: 11 });
+  }
+  if (hl === 'yokeflux') {
+    for (let i = 0; i < 4; i++) {
+      const xc = x0 + i * pw + pw / 2;
+      if (i % 2) {
+        s += Ln(xc, yM + 10, xc, yY + yYh - 2, { c: '--accent2', w: 1.6, m: 'ahb' });
+        s += Ln(xc + 6, yY + 13, Math.min(xc + pw - 10, x0 + W - 4), yY + 13, { c: '--accent', w: 1.6, m: 'aha' });
+        s += Ln(xc - 6, yY + 13, xc - pw + 10, yY + 13, { c: '--accent', w: 1.6, m: 'aha' });
+      } else s += Ln(xc, yY + yYh - 2, xc, yM + 10, { c: '--accent', w: 1.6, m: 'aha' });
+    }
+    s += T(x0 + pw, yY - 6, '極交界處：軛鐵磁通最大', { c: '--accent', b: 1, a: 'middle' });
+    s += Ln(x0 + pw, yY - 2, x0 + pw, yY + yYh, { c: '--accent', d: '2 2' });
+  }
+  s += T(x0, (meas ? py + 40 : yF + fH + 18), opt.cap || '展開截面示意（上 = 徑向朝外）', { fs: 11 });
+  return svg(560, meas ? py + 50 : yF + fH + 26, s);
+}
+
+// ---------- 側視圖：高度與探棒軸向位置 ----------
+function dSide(hl) {
+  let s = '';
+  const top = 30, bot = 190, xm = 250, wm = 40;
+  s += R(xm, top, wm, bot - top, '--nfill') + R(xm + wm + 3, top, 14, bot - top, '--iron');
+  s += T(xm + wm / 2, top - 8, '磁環', { a: 'middle', fs: 11 }) + T(xm + wm + 10, top - 8, '軛鐵', { a: 'middle', fs: 11 });
+  s += Ln(150, bot, 360, bot, { c: '--muted', d: '4 3' }) + T(366, bot + 4, '磁環底面');
+  const pz = 120;
+  s += R(xm - 22, pz - 4, 12, 8, hl === 'probeZ' ? '--accent' : '--muted') + Ln(xm - 22, pz, 160, pz, { c: '--muted', w: 3 });
+  s += T(150, pz - 10, '探棒', { fs: 11 });
+  if (hl === 'h') s += dim(xm + wm + 40, top, xm + wm + 40, bot, '高度 h', { a: 'start', lx: xm + wm + 48 });
+  if (hl === 'probeZ') s += dim(200, pz, 200, bot, '軸向位置 z', { a: 'end', lx: 194 });
+  s += T(150, 214, '側視：沿半徑方向切開的截面（左側為磁環內孔）', { fs: 11 });
+  return svg(520, 224, s);
+}
+
+// ---------- 曲線圖 ----------
+function axes(x0, y0, w, h, xl, yl) {
+  return Ln(x0, y0, x0 + w, y0, { c: '--muted', m: 'ah' }) + Ln(x0, y0, x0, y0 - h, { c: '--muted', m: 'ah' }) + T(x0 + w, y0 + 34, xl, { a: 'end' }) + T(x0 + 6, y0 - h + 4, yl);
+}
+function poly(f, x0, x1, n, X, Y) { let d = ''; for (let i = 0; i <= n; i++) { const x = x0 + (x1 - x0) * i / n; d += (i ? 'L' : 'M') + X(x).toFixed(1) + ',' + Y(f(x)).toFixed(1); } return d; }
+function dCurve(type) {
+  let s = '';
+  if (type === 'demag') {
+    const ox = 420, oy = 180, X = h => ox + h * 30, Y = b => oy - b * 180;
+    s += Ln(60, oy, 460, oy, { c: '--muted' }) + Ln(ox, oy + 10, ox, 20, { c: '--muted', m: 'ah' });
+    s += T(ox - 6, oy + 38, '← 反向磁場 −H (kOe)', { a: 'end' }) + T(ox + 6, 30, 'B, J (T)');
+    s += P(poly(h => (h > -9 ? 0.7 * (1 - 0.02 * Math.pow(-h / 9, 6)) : 0.7 * Math.max(0, 1 - (-h - 9) / 0.6)) + 0, -9.6, 0, 200, X, Y), { c: '--accent', w: 2.2 });
+    s += P(poly(h => 0.7 + 0.7 / 6.2 * h, -6.2, 0, 10, X, Y), { c: '--accent2', w: 2, d: '6 4' });
+    s += C(ox, Y(0.7), 4, '--accent') + T(ox + 8, Y(0.7) + 4, 'Br 剩磁', { c: '--accent', b: 1 });
+    s += C(X(-9.3), oy, 4, '--accent') + T(X(-9.3), oy + 18, 'Hcj 內稟矯頑力', { c: '--accent', b: 1, a: 'middle' });
+    s += C(X(-6.2), oy, 3.5, '--accent2') + T(X(-6.2) + 4, oy - 8, 'Hcb', { c: '--accent2' });
+    s += T(150, 16, '實線：內稟曲線 J（磁化強度）', { c: '--accent' }) + T(150, 34, '虛線：B 曲線（磁通密度）', { c: '--accent2' });
+    return svg(520, 230, s);
+  }
+  if (type === 'init') {
+    const ox = 60, oy = 180, X = h => ox + h * 110, Y = m => oy - m * 150;
+    s += axes(ox, oy, 430, 165, '充磁磁場 μ0H (T)', 'M / Br');
+    s += P(poly(h => 1 - Math.exp(-Math.pow(h / 1.2, 1.8)), 0, 3.8, 120, X, Y), { c: '--accent', w: 2.2 });
+    s += Ln(ox, Y(0.95), X(3.8), Y(0.95), { c: '--accent2', d: '5 4' }) + T(ox + 10, Y(0.95) - 6, '95%：視為已充飽', { c: '--accent2' });
+    [1, 2, 3].forEach(h => { s += Ln(X(h), oy, X(h), oy + 4, { c: '--muted' }) + T(X(h), oy + 16, h + ' T', { a: 'middle' }); });
+    s += Ln(X(0.9), oy, X(0.9), Y(0.45), { c: '--muted', d: '2 3' }) + T(X(0.9) + 6, oy - 10, '← Hcj（9 kOe ≈ 0.9 T）', { fs: 11 });
+    return svg(520, 225, s);
+  }
+  if (type === 'bs') {
+    const ox = 60, oy = 180, X = h => ox + h * 4.2, Y = b => oy - b * 70;
+    s += axes(ox, oy, 430, 165, '磁場強度 H', '磁通密度 B (T)');
+    s += P(poly(h => 2.0 * Math.tanh(h / 18) + 0.0004 * h, 0, 100, 120, X, Y), { c: '--accent', w: 2.2 });
+    s += Ln(ox, Y(2.0), X(100), Y(2.0), { c: '--accent2', d: '5 4' }) + T(X(100), Y(2.0) - 8, 'Bs 飽和磁通密度', { c: '--accent2', a: 'end', b: 1 });
+    s += T(X(12), Y(0.7), '線性區：導磁良好', { fs: 11 }) + T(X(60), Y(1.6), '飽和區：μ 趨近空氣', { fs: 11 });
+    return svg(520, 225, s);
+  }
+  if (type === 'scurve') {
+    const ox = 60, oy = 180, X = n => ox + n * 3.4, Y = v => oy - v * 150;
+    s += axes(ox, oy, 430, 165, '充磁強度 NI (kAT)', '');
+    s += P(poly(n => 1 - Math.exp(-Math.pow(n / 28, 1.7)), 0, 120, 120, X, Y), { c: '--accent', w: 2.2 });
+    s += P(poly(n => 1 - Math.exp(-Math.pow(n / 55, 3.2)), 0, 120, 120, X, Y), { c: '--accent2', w: 2, d: '6 4' });
+    s += T(X(72), Y(1.02) - 4, '峰值（左軸）', { c: '--accent', b: 1 }) + T(X(70), Y(0.55), '充飽體積比例（右軸）', { c: '--accent2', b: 1 });
+    s += Ln(X(60), oy, X(60), Y(1), { c: '--muted', d: '2 3' }) + T(X(60) + 4, oy - 6, '目前 NI', { fs: 11 });
+    return svg(520, 225, s);
+  }
+  if (type === 'pulse') {
+    const ox = 60, oy = 170, X = t => ox + t * 4, Y = i => oy - i * 130;
+    s += axes(ox, oy, 430, 160, '時間 (μs～ms)', '電流 I');
+    s += P(poly(t => (t < 40 ? Math.sin(Math.PI * t / 80) : Math.exp(-(t - 40) / 18)), 0, 105, 160, X, Y), { c: '--accent', w: 2.2 });
+    s += Ln(ox, Y(1), X(40), Y(1), { c: '--accent2', d: '5 4' }) + T(X(42), Y(1) + 4, '峰值電流 Ipk', { c: '--accent2', b: 1 });
+    s += T(X(62), Y(0.62), '電容放電脈衝', { fs: 11 });
+    return svg(520, 215, s);
+  }
+  if (type === 'eta') {
+    s += T(20, 30, '充磁時軛鐵「需要」承載的磁通（理想導磁時）', { c: '--text' });
+    s += R(20, 40, 460, 22, '--sfill');
+    s += T(20, 90, '軛鐵「能」承載的磁通 = Bs × 厚度 × 高度', { c: '--text' });
+    s += R(20, 100, 120, 22, '--accent', { op: 0.85 });
+    s += dim(20, 140, 140, 140, 'η = 能承載 / 需要', { dy: 18, a: 'start', lx: 150 });
+    return svg(520, 170, s);
+  }
+  return '';
+}
+
+// ---------- 波形示意 ----------
+function wf(x, horn = 0.94) { // x: 0..2（兩極），N 為正
+  const p = Math.floor(x), u = x - p, sgn = p % 2 ? -1 : 1;
+  const e = Math.min(u, 1 - u) / 0.22, edge = e >= 1 ? 1 : 0.5 - 0.5 * Math.cos(Math.PI * e);
+  const dip = 1 - (1 - horn) * Math.exp(-Math.pow((u - 0.5) / 0.2, 2));
+  const bump = 1 + 0.03 * Math.exp(-Math.pow((Math.min(u, 1 - u) - 0.2) / 0.06, 2));
+  return sgn * edge * dip * bump;
+}
+function dWave(type) {
+  const ox = 50, oy = 110, W = 440, A = 70, X = x => ox + x / 2 * W, Y = v => oy - v * A;
+  let s = '';
+  const horn = type === 'horn' ? 0.72 : 0.94;
+  s += Ln(ox, oy, ox + W + 14, oy, { c: '--muted', m: 'ah' }) + Ln(ox, oy + A + 14, ox, oy - A - 18, { c: '--muted', m: 'ah' });
+  s += T(ox + W + 14, oy + 18, '機械角', { a: 'end' }) + T(ox + 6, oy - A - 8, 'Bn (G)');
+  s += T(ox, oy + 18, '0°', { a: 'middle' }) + T(X(1) + 6, oy - 6, '360°/極數', { a: 'start' });
+  s += T(X(0.5), oy - A - 22 + (type === 'area' || type === 'ns' ? 0 : 0), 'N', { a: 'middle', c: '--text', b: 1 }) + T(X(1.5), oy + A + 28, 'S', { a: 'middle', c: '--text', b: 1 });
+  const f = x => wf(x, horn);
+  if (type === 'area' || type === 'ns' || type === 'aR') {
+    s += P(poly(f, 0, 1, 80, X, Y) + `L${X(1)},${oy} L${X(0)},${oy} Z`, { f: '--accent', op: 0.22 });
+    if (type === 'ns') s += P(poly(f, 1, 2, 80, X, Y) + `L${X(2)},${oy} L${X(1)},${oy} Z`, { f: '--accent2', op: 0.22 });
+  }
+  if (type === 'satref' || type === 'aR') s += P(poly(x => 1.12 * wf(x, 0.97), 0, 2, 200, X, Y), { c: '--ref', d: '6 4' });
+  if (type === 'compare') s += P(poly(x => 0.97 * wf(x, 0.99) * (1 - 0.1 * Math.abs(Math.sin(Math.PI * x))), 0, 2, 200, X, Y), { c: '--accent2', d: '2 3', w: 1.8 });
+  if (type === 'h1' || type === 'thd') s += P(poly(x => 1.2 * Math.sin(Math.PI * x), 0, 2, 200, X, Y), { c: '--accent2', d: '6 4', w: 1.8 });
+  s += P(poly(f, 0, 2, 240, X, Y), { c: '--accent', w: 2.2 });
+  if (type === 'peak' || type === 'horn') {
+    let mx = 0, mxX = 0; for (let i = 0; i <= 200; i++) { const x = i / 200; if (f(x) > mx) { mx = f(x); mxX = x; } }
+    s += C(X(mxX), Y(mx), 4.5, '--accent') + Ln(ox, Y(mx), X(1.1), Y(mx), { c: '--accent', d: '3 3' }) + T(X(1.12), Y(mx) + 4, '峰值', { c: '--accent', b: 1 });
+  }
+  if (type === 'center' || type === 'horn') {
+    s += Ln(X(0.5), oy, X(0.5), Y(f(0.5)), { c: '--accent2', d: '3 3' }) + C(X(0.5), Y(f(0.5)), 4.5, '--accent2');
+    s += T(X(0.5) + 8, Y(f(0.5)) + 18, '極中心值', { c: '--accent2', b: 1 });
+  }
+  if (type === 'h1') s += T(X(1.25), Y(1.2) - 4, '基波（與極同週期的正弦）', { c: '--accent2', b: 1 });
+  if (type === 'satref') s += T(X(1.1), Y(1.12) + 2, '飽和參考', { c: '--ref', b: 1 }) + T(X(0.55), Y(0.4), '目前', { c: '--accent', b: 1 });
+  if (type === 'compare') s += T(X(1.05), Y(0.9) - 10, '充磁時不裝軛鐵', { c: '--accent2', b: 1 });
+  if (type === 'area' || type === 'ns') {
+    s += T(X(0.5), oy - 26, '∫|Bn|dθ', { a: 'middle', c: '--accent', b: 1 });
+    s += C(X(0), oy, 3.5, '--text') + C(X(1), oy, 3.5, '--text') + T(X(1) + 6, oy - 6, '過零點', { fs: 11 });
+    if (type === 'ns') s += T(X(1.5), oy + 30, 'S 極面積', { a: 'middle', c: '--accent2', b: 1 });
+  }
+  if (type === 'aR') s += T(X(0.5), oy - 26, '目前面積', { a: 'middle', c: '--accent', b: 1 }) + T(X(1.15), Y(1.1), '飽和時面積（虛線下）', { c: '--ref', b: 1 });
+  let out = svg(540, 250, s);
+  if (type === 'thd') {
+    let b = '';
+    const hs = [[1, 1], [3, 0.24], [5, 0.12], [7, 0.07], [9, 0.05], [11, 0.03]];
+    b += Ln(40, 120, 500, 120, { c: '--muted' });
+    hs.forEach(([k, v], i) => { const x = 60 + i * 72; b += R(x, 120 - v * 100, 30, v * 100, i ? '--accent2' : '--accent'); b += T(x + 15, 136, k + ' 次', { a: 'middle' }); });
+    b += T(60, 14, '頻譜：1 次 = 基波；3、5、7… 次 = 諧波', { c: '--text' });
+    out += svg(540, 145, b);
+  }
+  return out;
+}
+
+// ---------- 說明內容 ----------
+const H = {
+  poles: { t: '極數', d: () => dTop('poles'), b: `<p>磁環圓周上 N 極與 S 極的<strong>總數</strong>（一定是偶數，N、S 交替排列）。</p><ul><li>每極的機械角 = 360° / 極數（8 極 → 45°）。</li><li>極對數 p = 極數 / 2；電角度 = 機械角 × p。</li><li>極距 τ ≈ π × 內徑 / 極數，是一個極在內表面的弧長。</li></ul><p>極數越多、極距越小，磁場越不容易延伸到遠處，表面波形越接近弦波；極數越少（寬極），波形越偏平頂，貼近量測時容易出現牛角。</p>` },
+  id: { t: '內徑 ID', d: () => dTop('id'), b: `<p>磁環內孔的直徑。本工具量測的是<strong>內表面</strong>的磁場（外轉子風扇馬達的定子在內側）。</p><p>內徑與外徑決定磁厚 hm = (外徑 − 內徑) / 2，以及極距 τ ≈ π × 內徑 / 極數。τ / hm 比值越大，波形越偏平頂。</p>` },
+  od: { t: '外徑 OD', d: () => dTop('od'), b: `<p>磁環外圓的直徑，外側緊貼軛鐵（中間可能有膠層或配合間隙）。</p><p>外徑 − 內徑 = 2 × 磁厚 hm。磁厚越大，磁通越多、表面磁場越高，但深處（靠軛鐵側）離夾具較遠，越難充飽。</p>` },
+  h: { t: '高度', d: () => dSide('h'), b: `<p>磁環的<strong>軸向長度</strong>。</p><p>磁環越短，端面附近的漏磁越多，中間高度處的表面磁場也越低；極距大（寬極）的磁環受影響更明顯，因為基波磁場延伸得較遠。模型以精確積分修正這個端部效應。</p>` },
+  ty: { t: '軛鐵厚度', d: () => dSection('yoke'), b: `<p>磁環外側導磁鋼殼的<strong>徑向厚度</strong>（外轉子風扇通常就是轉子殼），填 0 表示沒有軛鐵。</p><p>軛鐵的作用：</p><ul><li><strong>量測／使用時：</strong>提供低磁阻的回路，讓相鄰兩極的磁通從軛鐵內部走，內表面磁場因此提高。</li><li><strong>充磁時（本工具假設已裝上）：</strong>把充磁磁力線往徑向拉，磁化方向更接近徑向，波形較平頂。</li></ul><p>軛鐵太薄會飽和，兩種作用都會打折。</p>` },
+  gap: { t: '軛鐵與磁環間隙', d: () => dSection('gap'), b: `<p>磁環外圓與軛鐵內圓之間的<strong>徑向間隙</strong>，例如膠層厚度或配合間隙。</p><p>間隙相當於在磁路中串入空氣，間隙越大，軛鐵提高磁場、拉直磁化方向的效果越弱。一般膠合約 0.02–0.1 mm。</p>` },
+  bs: { t: '軛鐵飽和磁通密度 Bs', d: () => dCurve('bs'), b: `<p>軛鐵材料能承載的<strong>最大磁通密度</strong>。超過 Bs 後，材料的導磁率急速下降，表現得接近空氣。</p><ul><li>低碳鋼（SPCC、SECC 等）約 1.8–2.1 T。</li><li>矽鋼片約 1.9–2.0 T。</li></ul><p>脈衝充磁時磁環內的磁場高達 2–3 T 以上，軛鐵通常會深度飽和。模型用 Bs × 厚度限制軛鐵在充磁時能承載的磁通，見「充磁時軛鐵作用比例」。</p>` },
+  probeD: { t: '探棒距磁環內表面', d: () => dSection('probeD', { measure: true, pd: 36, cap: '量測狀態：夾具已移除，探棒在磁環內側空氣中' }), b: `<p>高斯計探棒內<strong>霍爾元件感測中心</strong>到磁環內表面的徑向距離。</p><p>注意：探棒本身有外殼或保護層，貼緊磁環量測時，感測中心離表面通常仍有 0.3–0.8 mm（依探棒規格）。這個值要填感測中心的距離，不是外殼的距離。</p><p>距離越大，高次諧波衰減越快：峰值下降，波形變圓、牛角變淺。</p>` },
+  probeZ: { t: '探棒軸向高度', d: () => dSide('probeZ'), b: `<p>探棒感測中心離<strong>磁環底面</strong>的軸向距離，範圍 0 到磁環高度。</p><p>放在中間高度（高度 / 2）讀值最高；越靠近上下端面，端部漏磁越多，讀值越低。比對實測時，請填量測治具實際的探棒高度。</p>` },
+  br: { t: 'Br 剩磁', d: () => dCurve('demag'), b: `<p><strong>剩磁 Br</strong>：磁鐵充飽磁後，外加磁場降為 0 時保留的磁通密度，代表材料「能提供多少磁」。</p><ul><li>MQ 等方向性黏結磁：壓縮成型約 0.6–0.72 T，射出成型約 0.4–0.6 T（依牌號與磁粉填充率）。</li></ul><p>模型中，磁環充飽處的磁化強度 = Br，所以表面磁場大致與 Br 成正比。用實測的飽和峰值反推並調整 Br，是校正模型最簡單的方式。</p>` },
+  hcj: { t: 'Hcj 內稟矯頑力', d: () => dCurve('demag') + dCurve('init'), b: `<p><strong>內稟矯頑力 Hcj</strong>：在反向磁場下，讓材料的磁化強度 J 降為 0 所需的磁場，代表抗退磁能力。單位 kOe（1 kOe ≈ 79.6 kA/m，在空氣中約相當於 0.1 T）。</p><ul><li>與 Hcb 不同：Hcb 是讓 B（磁通密度）降為 0 的磁場，數值較小。</li><li>MQP-B 約 9 kOe；高矯頑力牌號可達 15 kOe 以上。</li></ul><p>Hcj 越高，越難退磁，<strong>也越難充磁</strong>。本模型的初始充磁曲線以 Hcj 為尺度：約 1.33 × Hcj 時充到 63%，約 3 × Hcj 時接近飽和（下圖）。</p>` },
+  fixGap: { t: '夾具與磁環間隙', d: () => dSection('fixGap'), b: `<p>充磁夾具外表面（面向磁環的那一面）到磁環內表面的<strong>徑向間隙</strong>，就是套入時的配合間隙。</p><p>間隙越大，磁環所受的充磁磁場越弱、越平滑。實務上通常約 0.05–0.2 mm；填 0 代表完全貼合。</p>` },
+  depth: { t: '導體中心距夾具表面', d: () => dSection('depth'), b: `<p>夾具槽內導線（或整束導線）的<strong>中心</strong>，到夾具表面的徑向距離。</p><ul><li>單根導線：槽口楔塊／絕緣厚度 + 導線半徑。</li><li>多匝疊在同一槽：取整束導線的重心。</li></ul><p>導線到磁環的總距離 = 夾具間隙 + 導體深度。導線越淺，充磁效率越高，但磁場集中在極邊界，波形偏平頂、欠充時易成馬鞍形；導線越深，磁場越平滑、越接近弦波，但需要更大的安匝數。</p>` },
+  turns: { t: '每槽匝數', d: () => dSection('turns'), b: `<p>充磁夾具<strong>每個槽內的導線匝數 N</strong>。相鄰兩槽的電流方向相反（圖中 ⊙ 為流出紙面、⊗ 為流入），在兩槽之間形成一個磁極。</p><p>這個值只用來把安匝數換算成充磁機的峰值電流：I = NI / N，不影響波形計算。</p>` },
+  ni: { t: '充磁強度 NI（每槽安匝）', d: () => dSection('turns') + dCurve('pulse'), b: `<p><strong>NI = 每槽匝數 N × 充磁峰值電流 I</strong>，單位 kAT（千安匝）。它代表夾具每一槽產生的總電流，是決定充磁磁場強弱的根本量。</p><p>選用安匝數而不是充磁電壓的原因：同一個 NI 就是同一台充磁機、同一次放電的輸出，有軛鐵和無軛鐵的結果才能公平比較。充磁電壓和 NI 的對應關係取決於電容、線圈電感與電阻，要用實測校正。</p>` },
+  rI: { t: '對應峰值電流', d: () => dCurve('pulse'), b: `<p>充磁機放電電流脈衝的<strong>峰值</strong>：I = NI / 每槽匝數。</p><p>用來對照充磁機的能力（最大允許電流），也可用來估算夾具導線的電磁力和溫升。</p>` },
+  rH: { t: '極中心內表面場強 μ0H', d: () => dSection('hcenter'), b: `<p>夾具在<strong>極中心、磁環內表面</strong>這一點產生的充磁磁場，以 μ0H（T）表示，並附 kOe 換算（1 T ≈ 10 kOe）。</p><p>它是整個磁環內比較具代表性的參考點：靠近導體（極邊緣）的場強更高，磁環深處（靠軛鐵側）更低。MQ 一般要約 3 × Hcj（例如 9 kOe 的材料約 2.7 T）才能接近完全飽和。</p>` },
+  rS: { t: '已充飽體積（≥95%）', d: () => dCurve('init'), b: `<p>磁環截面中，磁化程度 <strong>M / Br ≥ 95%</strong> 的區域所佔比例（依截面積加權）。</p><p>表面峰值通常比這個比例更早飽和，因為表面磁場主要由靠近內表面的磁化決定；深處（靠軛鐵側）最後才充飽。要確保磁通量和長期穩定性，應以這個比例或單極面積判斷，而不是只看峰值。</p>` },
+  rP: { t: '峰值 / 飽和峰值', d: () => dWave('satref'), b: `<p>目前波形峰值 ÷ 飽和參考（120 kAT）波形峰值。</p><p>實務上常以「再增加 10% 充磁能量，峰值只增加 1–2% 以內」判定已飽和。這個比例接近 100% 時，代表再加大充磁也只有很小的效果。</p>` },
+  rE: { t: '充磁時軛鐵作用比例 η', d: () => dCurve('eta'), b: `<p>η = 軛鐵能承載的磁通（Bs × 厚度）÷ 理想導磁時軛鐵需要承載的充磁磁通。</p><ul><li>η = 100%：軛鐵未飽和，完整發揮把磁化方向拉成徑向的作用。</li><li>η 很小：軛鐵已深度飽和，充磁時表現得接近空氣，磁化方向接近不裝軛鐵的情況。</li></ul><p>大電流脈衝充磁時，薄軛鐵的 η 往往只有 10–30%。</p>` },
+  bn: { t: '表面高斯波形 Bn', d: () => dSection('bn', { measure: true, pd: 52, cap: '量測狀態：探棒只量垂直表面（徑向）的分量' }) + dWave('bn'), b: `<p>探棒沿磁環內表面轉一圈，量到的<strong>徑向磁場分量 Bn</strong>對機械角的曲線，單位 Gauss（1 T = 10,000 G）。</p><ul><li>N 極為正、S 極為負；橫軸 0° = N 極起點（由負轉正的過零點）。</li><li>只量徑向分量：一般霍爾探棒的感測方向垂直於表面，切向分量不計入。</li></ul>` },
+  satref: { t: '飽和參考（120 kAT）', d: () => dWave('satref'), b: `<p>同一組幾何與材料，以 <strong>120 kAT</strong>（本工具滑桿的最大值）充磁所得的波形，作為「完全飽和」的參考。</p><p>目前波形與它的差距，就是還沒充飽的部分。如果你的幾何在 120 kAT 時「已充飽體積」仍明顯低於 100%，這條參考線就不算完全飽和。</p>` },
+  compare: { t: '對照：充磁時不裝軛鐵', d: () => dWave('compare'), b: `<p>同樣的 NI，但<strong>充磁時不裝軛鐵</strong>（充完才裝上），量測時仍有軛鐵。</p><p>用來看軛鐵對「磁化方向」的影響：不裝軛鐵時，等方向性材料的磁化方向沿夾具的弧形磁力線，波形較圓滑；裝軛鐵時磁化較接近徑向，波形較平頂。軛鐵在充磁時若已深度飽和，兩條線會幾乎重疊。</p>` },
+  mPk: { t: '峰值', d: () => dWave('peak'), b: `<p>整圈波形中 |Bn| 的<strong>最大值</strong>（G）。</p><p>平頂或牛角波形的峰值出現在極邊緣附近，不一定在極中心。峰值容易量測，但對充磁是否充飽不夠敏感，建議搭配單極面積一起判斷。</p>` },
+  mC: { t: '極中心值', d: () => dWave('center'), b: `<p>每個極<strong>正中間</strong>位置（極起點 + 半個極的機械角，8 極時為 22.5°）的 |Bn|。</p><p>與峰值比較可以判斷波形的形狀：極中心值等於峰值代表弦波或平頂；明顯低於峰值代表中間凹陷。</p>` },
+  mH: { t: '極中心 / 峰值（牛角指標）', d: () => dWave('horn'), b: `<p>極中心值 ÷ 峰值，用來描述極頂是否凹陷：</p><ul><li><strong>≥ 0.97</strong>：弦波或平頂。</li><li><strong>0.90–0.97</strong>：微凹（輕微馬鞍形）。</li><li><strong>&lt; 0.90</strong>：牛角（兩側翹、中心凹）。</li></ul><p>成因有兩種：一是寬極、貼近量測時的幾何邊緣效應（充飽也存在）；二是欠充時磁化先從極邊緣的導體附近開始。增加 NI 時凹陷持續變淺的屬於後者。</p>` },
+  m1: { t: '基波振幅', d: () => dWave('h1'), b: `<p>把波形做傅立葉分解後，<strong>與極同週期的正弦成分</strong>（基波）的振幅。</p><p>馬達的反電動勢和轉矩主要由基波決定。平頂波的基波振幅會<strong>大於</strong>峰值（理想方波的基波 = 4/π ≈ 1.27 倍峰值），弦波的基波則等於峰值。</p>` },
+  mT: { t: 'THD 總諧波失真', d: () => dWave('thd'), b: `<p><strong>THD = √(V3² + V5² + V7² + …) ÷ V1</strong>，即所有諧波振幅的方和根除以基波振幅（對稱磁極只有奇次諧波）。</p><ul><li>純弦波：0%。</li><li>梯形波：約 15–35%。</li><li>理想方波：約 48%。</li></ul><p>THD 越低越接近弦波，反電動勢越平滑、轉矩漣波與噪音通常越小。</p>` },
+  mY: { t: '軛鐵磁通密度（估）', d: () => dSection('yokeflux'), b: `<p>使用狀態下軛鐵內的<strong>最大磁通密度</strong>估算值。</p><p>每極的磁通進入軛鐵後分成兩半，往左右相鄰的異極走，所以在<strong>極交界處</strong>軛鐵的周向磁通最大：B ≈ 單極磁通 / 2 ÷（軛鐵厚度 × 高度）。超過約 1.5 T 表示軛鐵開始飽和，內表面磁場會比計算值低。這是 2D 估算，未計軸向端部。</p>` },
+  aA: { t: '單極面積（平均）', d: () => dWave('area'), b: `<p>一個極的波形在<strong>相鄰兩個過零點之間</strong>，對 |Bn| 做機械角積分：∫|Bn| dθ，單位 G·°。</p><p>這就是旋轉掃描式高斯計常用的「極面積」，與該極的總磁通成正比，比峰值更能反映磁鐵整體的磁量。顯示值為所有極的平均。</p>` },
+  aR: { t: '單極面積 / 飽和', d: () => dWave('aR'), b: `<p>目前的單極面積 ÷ 飽和參考（120 kAT）的單極面積。</p><p>判斷充飽與否時，面積比峰值更敏感：常見峰值已經達到 99%，面積卻只有 97–98%，差額來自尚未充飽的深處與極邊緣。</p>` },
+  aNS: { t: 'N / S 單極面積', d: () => dWave('ns'), b: `<p>所有 N 極與所有 S 極的單極面積<strong>各自的平均值</strong>。</p><p>實際產品中，N、S 不平衡常來自夾具公差、磁環偏心或充磁不足，是重要的品管指標。本模型假設完全對稱，所以兩者相同；比對實測時可用來觀察偏差。</p>` },
+  aF: { t: '單極磁通（估）', d: () => dWave('area') + dSide(''), b: `<p>一個極穿過探棒所在圓柱面的<strong>總磁通</strong>估算值，單位 μWb：</p><p style="text-align:center"><strong>Φ ≈ 單極面積 × (π/180) × 探棒半徑 × 磁環高度</strong></p><p>這是以探棒高度處的波形代表整個軸向高度的粗估，端部漏磁會讓實際值略低。可用於估算反電動勢常數或比較不同方案。</p>` },
+  curve: { t: '峰值與充飽比例 vs 充磁強度', d: () => dCurve('scurve'), b: `<p>在固定幾何下，把 NI 從 0 掃到 120 kAT，畫出：</p><ul><li><strong>實線（左軸）：</strong>表面峰值（G）。</li><li><strong>虛線（右軸）：</strong>已充飽體積比例。</li></ul><p>兩條都是 S 形曲線。峰值較早趨平，充飽體積較晚；圓點為目前滑桿的位置。可用來決定充磁能量要加到多少才夠。</p>` },
+  magmap: { t: '磁化方向分佈', d: () => dSection('', { arrows: true, cap: '箭頭 = 磁化方向；等方向性材料的磁化沿充磁磁力線' }), b: `<p>把<strong>一對極</strong>（一個 N、一個 S）的磁環截面展開成矩形：</p><ul><li>上方灰帶：軛鐵（外側）。</li><li>下方圓點：夾具槽內導體（內側）。</li><li>箭頭方向：磁化方向；長度與深淺：磁化程度 M / Br。</li></ul><p>等方向性材料沒有固定的易磁化方向，磁化方向會沿充磁時的磁力線。弧形排列（類 Halbach）會讓內側的波形較接近弦波；接近徑向的排列則波形較平頂。</p>` },
+};
+
+// ---------- 彈出視窗 ----------
+const ov = document.createElement('div');
+ov.className = 'hov'; ov.hidden = true;
+ov.innerHTML = `<div class="hbox" role="dialog" aria-modal="true" aria-labelledby="htitle"><div class="hhead"><h3 id="htitle"></h3><button type="button" class="hclose" aria-label="關閉">×</button></div><div class="hbody"></div></div>`;
+document.body.appendChild(ov);
+const close = () => { ov.hidden = true; };
+ov.addEventListener('click', e => { if (e.target === ov) close(); });
+ov.querySelector('.hclose').addEventListener('click', close);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+document.addEventListener('click', e => {
+  const b = e.target.closest('.info'); if (!b) return;
+  e.preventDefault();
+  const h = H[b.dataset.k]; if (!h) return;
+  ov.querySelector('#htitle').textContent = h.t;
+  ov.querySelector('.hbody').innerHTML = (h.d ? h.d() : '') + h.b;
+  ov.hidden = false; ov.querySelector('.hclose').focus();
+});
+window.__HELP_KEYS = Object.keys(H);
+})();
+
+</script>
+</body>
+</html>
