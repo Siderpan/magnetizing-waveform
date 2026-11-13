@@ -58,6 +58,14 @@ h2{display:flex;align-items:center;gap:6px}
 .hbody{font-size:15.5px;line-height:1.75}
 .hbody p{margin:6px 0}.hbody ul{margin:6px 0;padding-left:20px}
 .hbody strong{font-weight:500;color:var(--accent)}
+
+.prow{display:flex;gap:8px;margin:8px 0;align-items:center}
+.prow select,.prow input[type=text]{flex:1;min-width:0;height:36px;border:1px solid var(--line2);border-radius:6px;background:transparent;color:var(--text);padding:0 10px;font-size:15px}
+.btn{height:36px;padding:0 14px;border:1px solid var(--line2);border-radius:6px;background:transparent;color:var(--text);font-size:15px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent2)}
+.btn.warn{border-color:var(--err);color:var(--err)}
+.pmsg{font-size:14px;color:var(--muted);min-height:20px}
+.pmsg.e{color:var(--err)}
 </style>
 </head>
 <body>
@@ -67,6 +75,12 @@ h2{display:flex;align-items:center;gap:6px}
 </header>
 <div class="wrap">
 <aside class="side">
+<div class="card pcard"><h2>參數組<button type="button" class="info" data-k="presets" aria-label="說明：參數組">?</button></h2>
+<div class="prow"><select id="pSel" aria-label="已儲存的參數組"></select><button type="button" class="btn" id="pLoad">載入</button><button type="button" class="btn" id="pDel">刪除</button></div>
+<div class="prow"><input type="text" id="pName" placeholder="8P 40×46 軛鐵1.5" aria-label="參數組名稱" maxlength="60"><button type="button" class="btn" id="pSave">儲存</button></div>
+<div class="prow"><button type="button" class="btn" id="pExp">匯出檔案</button><button type="button" class="btn" id="pImp">匯入檔案</button><input type="file" id="pFile" accept=".json,application/json" hidden></div>
+<div class="pmsg" id="pMsg" role="status"></div>
+</div>
 <div class="card"><h2>磁環</h2>
 <div class="f"><div class="lb"><label for="poles">極數</label><button type="button" class="info" data-k="poles" aria-label="說明：極數">?</button></div><input id="poles" type="number" step="2" min="2" value="8"></div>
 <div class="f"><div class="lb"><label for="id">內徑 (mm)</label><button type="button" class="info" data-k="id" aria-label="說明：內徑 (mm)">?</button></div><input id="id" type="number" step="0.1" value="40"></div>
@@ -554,7 +568,7 @@ $('ni').addEventListener('input', update);
 window.addEventListener('resize', () => { clearTimeout(tm); tm = setTimeout(update, 150); });
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', update);
 window.addEventListener('themechange', update);
-const fields = Array.from(document.querySelectorAll('.side input'));
+const fields = Array.from(document.querySelectorAll('.side .card:not(.pcard) input'));
 fields.forEach((el, i) => {
   el.addEventListener('keydown', e => {
     if (e.key !== 'Tab' || e.altKey || e.ctrlKey || e.metaKey) return;
@@ -564,6 +578,92 @@ fields.forEach((el, i) => {
   });
   el.addEventListener('focus', () => { try { el.select(); } catch (err) {} });
 });
+
+// ---------- 參數組：儲存 / 載入 / 刪除 / 匯出 / 匯入 ----------
+const PK = 'gaussPresets';
+const pSel = $('pSel'), pName = $('pName'), pMsg = $('pMsg');
+let presets = [];
+try { presets = JSON.parse(localStorage.getItem(PK) || '[]'); if (!Array.isArray(presets)) presets = []; } catch (e) { presets = []; }
+const persist = () => { try { localStorage.setItem(PK, JSON.stringify(presets)); return true; } catch (e) { return false; } };
+const msg = (t, err) => { pMsg.textContent = t; pMsg.className = 'pmsg' + (err ? ' e' : ''); };
+function fillSel(sel) {
+  pSel.innerHTML = presets.length ? '' : '<option value="">（尚無儲存的參數組）</option>';
+  presets.slice().sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant')).forEach(p => {
+    const o = document.createElement('option'); o.value = p.name; o.textContent = p.name; pSel.appendChild(o);
+  });
+  if (sel) pSel.value = sel;
+}
+function snapshot() { const v = {}; ids.forEach(k => v[k] = $(k).value); v.ni = $('ni').value; return v; }
+const armed = {};
+function arm(btn, key, label) {
+  if (armed[key]) return true;
+  armed[key] = setTimeout(() => { armed[key] = null; btn.textContent = btn.dataset.orig; btn.classList.remove('warn'); }, 4000);
+  btn.dataset.orig = btn.dataset.orig || btn.textContent; btn.textContent = label; btn.classList.add('warn');
+  return false;
+}
+function disarm(btn, key) { clearTimeout(armed[key]); armed[key] = null; if (btn.dataset.orig) btn.textContent = btn.dataset.orig; btn.classList.remove('warn'); }
+pName.addEventListener('input', () => { disarm($('pSave'), 'save'); msg(''); });
+pSel.addEventListener('change', () => { pName.value = pSel.value; disarm($('pDel'), 'del'); });
+$('pSave').addEventListener('click', () => {
+  const name = pName.value.trim();
+  if (!name) { msg('請先輸入參數組名稱', true); pName.focus(); return; }
+  if (read().e.length) { msg('目前參數有錯誤，請先修正再儲存', true); return; }
+  const i = presets.findIndex(p => p.name === name);
+  if (i >= 0 && !arm($('pSave'), 'save', '確認覆蓋')) { msg('「' + name + '」已存在，再按一次「確認覆蓋」'); return; }
+  disarm($('pSave'), 'save');
+  const rec = { name, saved: new Date().toISOString(), v: snapshot() };
+  if (i >= 0) presets[i] = rec; else presets.push(rec);
+  fillSel(name);
+  const ok = persist();
+  msg(ok ? (i >= 0 ? '已覆蓋「' + name + '」' : '已儲存「' + name + '」') : '瀏覽器不允許本機儲存，請改用「匯出檔案」', !ok);
+});
+$('pLoad').addEventListener('click', () => {
+  const p = presets.find(p => p.name === pSel.value);
+  if (!p) { msg('請先選擇要載入的參數組', true); return; }
+  ids.forEach(k => { if (p.v[k] != null) $(k).value = p.v[k]; });
+  if (p.v.ni != null) $('ni').value = p.v.ni;
+  pName.value = p.name; rebuild(); msg('已載入「' + p.name + '」');
+});
+$('pDel').addEventListener('click', () => {
+  const name = pSel.value;
+  if (!presets.some(p => p.name === name)) { msg('請先選擇要刪除的參數組', true); return; }
+  if (!arm($('pDel'), 'del', '確認刪除')) { msg('再按一次「確認刪除」以刪除「' + name + '」'); return; }
+  disarm($('pDel'), 'del');
+  presets = presets.filter(p => p.name !== name); persist(); fillSel(); pName.value = ''; msg('已刪除「' + name + '」');
+});
+$('pExp').addEventListener('click', () => {
+  if (!presets.length) { msg('沒有可匯出的參數組', true); return; }
+  const d = new Date(), pad = n => String(n).padStart(2, '0');
+  const fn = '表面高斯參數_' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '.json';
+  const blob = new Blob([JSON.stringify({ app: 'surface-gauss-simulator', version: 1, presets }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fn;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  msg('已匯出 ' + presets.length + ' 組參數（' + fn + '）');
+});
+$('pImp').addEventListener('click', () => $('pFile').click());
+$('pFile').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const data = JSON.parse(r.result), list = Array.isArray(data) ? data : data.presets;
+      if (!Array.isArray(list)) throw 0;
+      let n = 0;
+      list.forEach(p => {
+        if (!p || typeof p.name !== 'string' || !p.v || typeof p.v !== 'object') return;
+        const rec = { name: p.name.slice(0, 60), saved: p.saved || new Date().toISOString(), v: {} };
+        ids.concat('ni').forEach(k => { if (p.v[k] != null && isFinite(parseFloat(p.v[k]))) rec.v[k] = String(p.v[k]); });
+        const i = presets.findIndex(q => q.name === rec.name);
+        if (i >= 0) presets[i] = rec; else presets.push(rec); n++;
+      });
+      if (!n) throw 0;
+      persist(); fillSel(); msg('已匯入 ' + n + ' 組參數（同名者已覆蓋）');
+    } catch (err) { msg('檔案格式不正確，請選擇本工具匯出的 .json 檔', true); }
+    e.target.value = '';
+  };
+  r.readAsText(f);
+});
+fillSel();
 rebuild();
 })();
 </script>
@@ -881,6 +981,7 @@ const H = {
   aR: { t: '單極面積 / 飽和', d: () => dWave('aR'), b: `<p>目前的單極面積 ÷ 飽和參考（120 kAT）的單極面積。</p><p>判斷充飽與否時，面積比峰值更敏感：常見峰值已經達到 99%，面積卻只有 97–98%，差額來自尚未充飽的深處與極邊緣。</p>` },
   aNS: { t: 'N / S 單極面積', d: () => dWave('ns'), b: `<p>所有 N 極與所有 S 極的單極面積<strong>各自的平均值</strong>。</p><p>實際產品中，N、S 不平衡常來自夾具公差、磁環偏心或充磁不足，是重要的品管指標。本模型假設完全對稱，所以兩者相同；比對實測時可用來觀察偏差。</p>` },
   aF: { t: '單極磁通（估）', d: () => dWave('area') + dSide(''), b: `<p>一個極穿過探棒所在圓柱面的<strong>總磁通</strong>估算值，單位 μWb：</p><p style="text-align:center"><strong>Φ ≈ 單極面積 × (π/180) × 探棒半徑 × 磁環高度</strong></p><p>這是以探棒高度處的波形代表整個軸向高度的粗估，端部漏磁會讓實際值略低。可用於估算反電動勢常數或比較不同方案。</p>` },
+  presets: { t: '參數組', b: `<p>把目前左側所有參數與充磁強度存成一組，日後一鍵載入。</p><ul><li><strong>儲存：</strong>輸入名稱後按「儲存」；名稱已存在時會要求再按一次確認覆蓋。從下拉選單選一組時，名稱會自動帶入，方便修改後覆蓋。</li><li><strong>載入：</strong>選擇參數組後按「載入」，所有欄位與滑桿會一起還原。</li><li><strong>刪除：</strong>需再按一次確認。</li><li><strong>匯出／匯入檔案：</strong>把所有參數組存成 .json 檔，可用來備份、換電腦或分享給同事；匯入時同名的參數組會被覆蓋。</li></ul><p>參數組只存在<strong>你這台電腦的這個瀏覽器</strong>裡，不會上傳到任何伺服器，其他人看不到。清除瀏覽器資料或換瀏覽器後會消失，重要的參數請定期匯出備份。</p>` },
   curve: { t: '峰值與充飽比例 vs 充磁強度', d: () => dCurve('scurve'), b: `<p>在固定幾何下，把 NI 從 0 掃到 120 kAT，畫出：</p><ul><li><strong>實線（左軸）：</strong>表面峰值（G）。</li><li><strong>虛線（右軸）：</strong>已充飽體積比例。</li></ul><p>兩條都是 S 形曲線。峰值較早趨平，充飽體積較晚；圓點為目前滑桿的位置。可用來決定充磁能量要加到多少才夠。</p>` },
   magmap: { t: '磁化方向分佈', d: () => dSection('', { arrows: true, cap: '箭頭 = 磁化方向；等方向性材料的磁化沿充磁磁力線' }), b: `<p>把<strong>一對極</strong>（一個 N、一個 S）的磁環截面展開成矩形：</p><ul><li>上方灰帶：軛鐵（外側）。</li><li>下方圓點：夾具槽內導體（內側）。</li><li>箭頭方向：磁化方向；長度與深淺：磁化程度 M / Br。</li></ul><p>等方向性材料沒有固定的易磁化方向，磁化方向會沿充磁時的磁力線。弧形排列（類 Halbach）會讓內側的波形較接近弦波；接近徑向的排列則波形較平頂。</p>` },
 };

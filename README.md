@@ -22,4 +22,4 @@
 
 ## 使用
 
-單一 HTML 檔，不需安裝：直接開啟 `index.html`，或瀏覽 https://siderpan.github.io/magnetizing-waveform/ 。輸入值只存在使用者自己的瀏覽器。
+單一 HTML 檔，不需安裝：直接開啟 `index.html`，或瀏覽 https://siderpan.github.io/magnetizing-waveform/ 。輸入值與儲存的參數組只存在使用者自己的瀏覽器，可匯出／匯入 .json 檔備份或分享。
