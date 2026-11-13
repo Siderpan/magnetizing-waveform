@@ -125,7 +125,7 @@ h2{display:flex;align-items:center;gap:6px}
 </div>
 
 <div class="card">
-<h2>表面高斯波形 Bn<button type="button" class="info" data-k="bn" aria-label="說明：表面高斯波形 Bn">?</button></h2>
+<h2 style="justify-content:space-between"><span style="display:flex;align-items:center;gap:6px">表面高斯波形 Bn<button type="button" class="info" data-k="bn" aria-label="說明：表面高斯波形 Bn">?</button></span><span style="display:flex;align-items:center;gap:10px"><span class="pmsg" id="cpMsg" role="status" style="font-weight:400"></span><button type="button" class="btn" id="cpImg" style="font-weight:400">複製圖片</button></span></h2>
 <canvas id="cw" height="440" data-aspect="0.55"></canvas>
 <div class="opts">
 <label><input type="checkbox" id="oSat" checked><span class="leg" style="border-top:2px dashed var(--ref)"></span>飽和參考（120 kAT）</label><button type="button" class="info" data-k="satref" aria-label="說明：飽和參考">?</button>
@@ -411,6 +411,7 @@ function read() {
   if (!(v.turns >= 1)) e.push('匝數須 ≥ 1');
   return { v, e };
 }
+const FONT = getComputedStyle(document.body).fontFamily || 'sans-serif';
 function setupCanvas(c) {
   const dpr = window.devicePixelRatio || 1, w = c.clientWidth;
   const ar = parseFloat(c.dataset.aspect || 0);
@@ -464,13 +465,15 @@ function update() {
   const rp = (v.id / 2 - v.probeD) / 1000;
   const flux = m.avgArea * 1e-4 * (Math.PI / 180) * rp * (v.h / 1000) * 1e6;
   $('aF').textContent = m.avgArea > 0 ? flux.toFixed(1) + ' μWb' : '-';
+  state.last = { r, rn, m, ni };
   drawWave(r, rn, m);
   drawCurve(ni);
   drawMag(r);
 }
 
-function drawWave(r, rn, met) {
-  const { x, w, h } = setupCanvas($('cw'));
+function drawWave(r, rn, met, tgt) {
+  const { x, w, h } = tgt || setupCanvas($('cw'));
+  const fs = (tgt && tgt.fs) || 13.5;
   const { v, sat } = state;
   const pair = $('oRange').value === 'pair';
   const N = r.wave.length - 1;
@@ -481,11 +484,11 @@ function drawWave(r, rn, met) {
   mx = Math.max(mx * 1.1, 100);
   const st = niceStep(mx, 4); mx = Math.ceil(mx / st) * st;
   const X = i => L + pw * i / span, Y = val => T + ph / 2 - val / mx * ph / 2;
-  x.font = '13.5px sans-serif'; x.fillStyle = css('--muted'); x.strokeStyle = css('--line'); x.lineWidth = 1;
+  x.font = fs + 'px ' + FONT; x.fillStyle = css('--muted'); x.strokeStyle = css('--line'); x.lineWidth = 1;
   for (let y = -mx; y <= mx + 1e-6; y += st) { x.beginPath(); x.moveTo(L, Y(y)); x.lineTo(L + pw, Y(y)); x.stroke(); x.textAlign = 'right'; x.fillText(Math.round(y), L - 6, Y(y) + 4); }
   const degSpan = pair ? 720 / v.poles : 360, dStep = niceStep(degSpan, 8);
   x.textAlign = 'center';
-  for (let d = 0; d <= degSpan + 1e-6; d += dStep) { const px = L + pw * d / degSpan; x.beginPath(); x.moveTo(px, T); x.lineTo(px, T + ph); x.stroke(); x.fillText(d.toFixed(dStep < 1 ? 1 : 0) + '°', px, T + ph + 16); }
+  for (let d = 0; d <= degSpan + 1e-6; d += dStep) { const px = L + pw * d / degSpan; x.beginPath(); x.moveTo(px, T); x.lineTo(px, T + ph); x.stroke(); x.fillText(d.toFixed(dStep < 1 ? 1 : 0) + '°', px, T + ph + fs + 4); }
   x.save(); x.translate(16, T + ph / 2); x.rotate(-Math.PI / 2); x.textAlign = 'center'; x.fillText('Bn (Gauss)', 0, 0); x.restore();
   x.strokeStyle = css('--line2'); x.beginPath(); x.moveTo(L, Y(0)); x.lineTo(L + pw, Y(0)); x.stroke();
   const line = (arr, color, dash, lw) => { x.strokeStyle = color; x.lineWidth = lw; x.setLineDash(dash); x.beginPath(); for (let i = 0; i <= span; i++) { const idx = ((i - off) % N + N) % N; const px = X(i), py = Y(arr[idx]); i ? x.lineTo(px, py) : x.moveTo(px, py); } x.stroke(); x.setLineDash([]); };
@@ -578,6 +581,93 @@ fields.forEach((el, i) => {
   });
   el.addEventListener('focus', () => { try { el.select(); } catch (err) {} });
 });
+
+// ---------- 複製圖片 ----------
+function buildImage() {
+  const { v, satM } = state, { r, rn, m, ni } = state.last;
+  const S = 2, W = 1600, H = 920;
+  const cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S;
+  const x = cv.getContext('2d'); x.scale(S, S);
+  const F = (sz, wt) => (wt ? '500 ' : '') + sz + 'px ' + FONT;
+  x.fillStyle = css('--card'); x.fillRect(0, 0, W, H);
+  x.fillStyle = css('--text'); x.font = F(26, 1); x.textAlign = 'left'; x.fillText('表面高斯模擬器', 32, 48);
+  const d = new Date(), pad = n => String(n).padStart(2, '0');
+  const stamp = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  const pn = $('pName').value.trim();
+  x.font = F(16); x.fillStyle = css('--muted'); x.textAlign = 'right';
+  x.fillText((pn ? '參數組：' + pn + '　' : '') + stamp, W - 32, 48);
+  x.strokeStyle = css('--line'); x.beginPath(); x.moveTo(32, 66); x.lineTo(W - 32, 66); x.stroke();
+  // 左欄：參數
+  const sec = [
+    ['磁環', [['極數', v.poles], ['內徑 / 外徑', v.id + ' / ' + v.od + ' mm'], ['高度', v.h + ' mm']]],
+    ['軛鐵', v.ty > 0 ? [['厚度 / 間隙', v.ty + ' / ' + v.gap + ' mm'], ['Bs', v.bs + ' T']] : [['軛鐵', '無']]],
+    ['探棒', [['距內表面', v.probeD + ' mm'], ['軸向高度', v.probeZ + ' mm']]],
+    ['材料', [['Br', v.br + ' T'], ['Hcj', v.hcj + ' kOe']]],
+    ['充磁夾具', [['夾具間隙', v.fixGap + ' mm'], ['導體深度', v.depth + ' mm'], ['每槽匝數', v.turns]]],
+    ['充磁', [['NI', (ni / 1000).toFixed(1) + ' kAT'], ['峰值電流', (ni / v.turns / 1000).toFixed(2) + ' kA'], ['極中心場強', r.hCenter.toFixed(2) + ' T'], ['已充飽體積', (r.satFrac * 100).toFixed(0) + '%'], ['充磁時軛鐵作用', v.ty > 0 ? (r.eta * 100).toFixed(0) + '%' : '無軛鐵']]],
+  ];
+  let y = 104; const lx = 32, lw = 330;
+  x.fillStyle = css('--chip'); x.fillRect(lx - 8, 82, lw + 16, H - 82 - 24);
+  sec.forEach(([t, rows]) => {
+    x.textAlign = 'left'; x.fillStyle = css('--text'); x.font = F(17, 1); x.fillText(t, lx + 8, y); y += 26;
+    rows.forEach(([k, val]) => {
+      x.font = F(15.5); x.fillStyle = css('--muted'); x.textAlign = 'left'; x.fillText(k, lx + 8, y);
+      x.fillStyle = css('--text'); x.textAlign = 'right'; x.fillText(String(val), lx + lw - 8, y); y += 24;
+    });
+    y += 12;
+  });
+  // 右側：波形
+  const cx0 = lx + lw + 40, cw = W - cx0 - 32, ch = 470;
+  x.textAlign = 'left'; x.fillStyle = css('--text'); x.font = F(18, 1); x.fillText('表面高斯波形 Bn（0° = N 極起點）', cx0, 104);
+  x.save(); x.translate(cx0, 118); drawWave(r, rn, m, { x, w: cw, h: ch, fs: 14 }); x.restore();
+  // 圖例
+  let gx = cx0 + 64, gy = 118 + ch + 26;
+  const leg = (color, dash, label) => { x.strokeStyle = color; x.lineWidth = 2.2; x.setLineDash(dash); x.beginPath(); x.moveTo(gx, gy - 5); x.lineTo(gx + 28, gy - 5); x.stroke(); x.setLineDash([]); x.fillStyle = css('--muted'); x.font = F(15); x.textAlign = 'left'; x.fillText(label, gx + 36, gy); gx += 36 + x.measureText(label).width + 28; };
+  leg(css('--accent'), [], '目前');
+  if ($('oSat').checked) leg(css('--ref'), [6, 4], '飽和參考（120 kAT）');
+  if (rn) leg(css('--accent2'), [2, 3], '充磁時不裝軛鐵');
+  x.fillStyle = css('--accent'); x.globalAlpha = 0.18; x.fillRect(gx, gy - 12, 22, 12); x.globalAlpha = 1;
+  x.fillStyle = css('--muted'); x.fillText('單極面積範圍', gx + 30, gy);
+  // 指標
+  const mets = [
+    ['峰值', m.peak.toFixed(0) + ' G'], ['極中心值', m.center.toFixed(0) + ' G'], ['極中心 / 峰值', m.peak > 1 ? m.horn.toFixed(2) : '-'],
+    ['基波振幅', m.h1.toFixed(0) + ' G'], ['THD', m.peak > 1 ? (m.thd * 100).toFixed(0) + '%' : '-'], ['峰值 / 飽和', satM.peak > 0 ? (m.peak / satM.peak * 100).toFixed(1) + '%' : '-'],
+    ['單極面積', Math.round(m.avgArea).toLocaleString() + ' G·°'], ['單極面積 / 飽和', satM.avgArea > 0 ? (m.avgArea / satM.avgArea * 100).toFixed(1) + '%' : '-'],
+    ['N / S 單極面積', Math.round(m.areaN).toLocaleString() + ' / ' + Math.round(m.areaS).toLocaleString()],
+    ['單極磁通（估）', (m.avgArea * 1e-4 * Math.PI / 180 * (v.id / 2 - v.probeD) / 1000 * v.h / 1000 * 1e6).toFixed(1) + ' μWb'],
+    ['軛鐵磁通密度（估）', r.yokeB == null ? '無軛鐵' : r.yokeB.toFixed(2) + ' T'],
+  ];
+  const cols = 4, gap = 12, bw = (cw - gap * (cols - 1)) / cols, bh = 62, my0 = gy + 22;
+  mets.forEach(([k, val], i) => {
+    const bx = cx0 + (i % cols) * (bw + gap), by = my0 + Math.floor(i / cols) * (bh + gap);
+    x.fillStyle = css('--chip'); x.fillRect(bx, by, bw, bh);
+    x.textAlign = 'left'; x.fillStyle = css('--muted'); x.font = F(14); x.fillText(k, bx + 12, by + 22);
+    x.fillStyle = css('--text'); x.font = F(20, 1); x.fillText(val, bx + 12, by + 50);
+  });
+  x.textAlign = 'right'; x.fillStyle = css('--muted'); x.font = F(13);
+  x.fillText('半解析模型估算值，僅供趨勢比較', W - 32, H - 10);
+  return cv;
+}
+$('cpImg').addEventListener('click', async () => {
+  const cm = $('cpMsg');
+  if (!state || !state.last) { cm.textContent = '請先修正參數錯誤'; cm.className = 'pmsg e'; return; }
+  const cv = buildImage();
+  const blobP = new Promise(res => cv.toBlob(res, 'image/png'));
+  try {
+    if (!navigator.clipboard || !window.ClipboardItem) throw new Error('nocb');
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blobP })]);
+    cm.textContent = '已複製，可直接貼上'; cm.className = 'pmsg';
+  } catch (e) {
+    try {
+      const blob = await blobP, a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = '表面高斯波形.png'; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      cm.textContent = '瀏覽器不支援複製，已改為下載 PNG'; cm.className = 'pmsg';
+    } catch (e2) { cm.textContent = '複製失敗'; cm.className = 'pmsg e'; }
+  }
+  clearTimeout(cm._t); cm._t = setTimeout(() => { cm.textContent = ''; }, 4000);
+});
+window.__buildImage = buildImage;
 
 // ---------- 參數組：儲存 / 載入 / 刪除 / 匯出 / 匯入 ----------
 const PK = 'gaussPresets';
