@@ -89,6 +89,7 @@ h2{display:flex;align-items:center;gap:6px}
 .kv .k{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:15px;white-space:nowrap}
 .kv .val{font-size:18px;font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}
 .kv .val.warn{color:var(--err)}
+.dimf{opacity:.45}
 </style>
 </head>
 <body>
@@ -128,21 +129,25 @@ h2{display:flex;align-items:center;gap:6px}
 <div class="f"><div class="lb"><label for="depth">導體中心距夾具表面 (mm)</label><button type="button" class="info" data-k="depth" aria-label="說明：導體中心距夾具表面 (mm)">?</button></div><input id="depth" type="number" step="0.1" min="0.1" value="1.0"></div>
 <div class="f"><div class="lb"><label for="turns">每槽匝數</label><button type="button" class="info" data-k="turns" aria-label="說明：每槽匝數">?</button></div><input id="turns" type="number" step="1" min="1" value="4"></div>
 </div>
-<div class="card"><h2>充磁機（電容放電）</h2>
+<div class="card"><h2>充磁強度設定</h2>
+<div class="f"><div class="lb"><label for="smode">滑桿模式</label><button type="button" class="info" data-k="smode" aria-label="說明：滑桿模式">?</button></div><select id="smode" style="width:100%;height:36px;border:1px solid var(--line2);border-radius:6px;background:transparent;color:var(--text);padding:0 6px;font-size:15px"><option value="auto">依幾何自動</option><option value="volt">充磁機電壓</option></select></div>
+<div id="mcFields">
+<div class="sm" style="margin:6px 0 2px">充磁機（電容放電）參數</div>
 <div class="f"><div class="lb"><label for="capC">電容 C (μF)</label><button type="button" class="info" data-k="capC" aria-label="說明：電容 C (μF)">?</button></div><input id="capC" type="number" step="100" min="1" value="3000"></div>
 <div class="f"><div class="lb"><label for="indL">迴路電感 L (μH)</label><button type="button" class="info" data-k="indL" aria-label="說明：迴路電感 L (μH)">?</button></div><input id="indL" type="number" step="1" min="0.1" value="40"></div>
 <div class="f"><div class="lb"><label for="resR">迴路電阻 R (mΩ)</label><button type="button" class="info" data-k="resR" aria-label="說明：迴路電阻 R (mΩ)">?</button></div><input id="resR" type="number" step="1" min="0" value="40"></div>
 <div class="f"><div class="lb"><label for="vmax">最高充電電壓 (V)</label><button type="button" class="info" data-k="vmax" aria-label="說明：最高充電電壓 (V)">?</button></div><input id="vmax" type="number" step="100" min="10" value="3000"></div>
+</div>
 </div>
 <div class="err" id="err" role="alert"></div>
 </aside>
 
 <main class="main">
 <div class="card nibar">
-<h2>充磁強度<button type="button" class="info" data-k="volt" aria-label="說明：充電電壓">?</button></h2>
+<h2>充磁強度<button type="button" class="info" data-k="volt" aria-label="說明：充磁強度">?</button></h2>
 <div class="ctrl">
-<input type="range" id="volt" min="0" max="3000" step="5" value="2250" aria-label="充電電壓">
-<div><span class="big" id="vOut">2250</span> <span style="color:var(--muted)">V</span> <span class="sm" id="v99"></span></div>
+<input type="range" id="volt" min="0" max="1000" step="1" value="800" aria-label="充磁強度">
+<div><span class="big" id="vOut">-</span> <span style="color:var(--muted)" id="vUnit">kAT</span> <span class="sm" id="v99"></span></div>
 </div>
 <div class="reads">
 <div class="m"><div class="l">峰值電流 / NI<button type="button" class="info" data-k="rI" aria-label="說明：峰值電流與安匝數">?</button></div><div class="v" id="rI">-</div></div>
@@ -181,7 +186,7 @@ h2{display:flex;align-items:center;gap:6px}
 </div>
 
 <div class="two">
-<div class="card"><h2>峰值與充飽比例 vs 充電電壓<button type="button" class="info" data-k="curve" aria-label="說明：峰值與充飽比例 vs 充磁強度">?</button></h2><canvas id="cc" height="300"></canvas>
+<div class="card"><h2><span id="cTitle">峰值與充飽比例 vs 充磁強度</span><button type="button" class="info" data-k="curve" aria-label="說明：峰值與充飽比例 vs 充磁強度">?</button></h2><canvas id="cc" height="300"></canvas>
 <div class="opts"><span><span class="leg" style="border-top:2px solid var(--accent)"></span>峰值</span><span><span class="leg" style="border-top:2px dashed var(--accent2)"></span>充飽體積比例</span></div></div>
 <div class="card"><h2>磁化方向分佈（一對極的截面展開）<button type="button" class="info" data-k="magmap" aria-label="說明：磁化方向分佈（一對極的截面展開）">?</button></h2><canvas id="cm" height="300"></canvas>
 <div class="opts"><span>箭頭長度與深淺 = 磁化程度 M/Br；上方灰帶為軛鐵，下方圓點為夾具槽內導體</span></div></div>
@@ -434,7 +439,10 @@ function pulse(v) {
   return { k, tp };
 }
 let pendingNI = null;
-try { const s = migrate(JSON.parse(localStorage.getItem('mqwave2') || 'null')); if (s) { ids.forEach(k => { if (s[k] != null) $(k).value = s[k]; }); if (s.vmax != null) $('volt').max = s.vmax; if (s.volt != null) $('volt').value = s.volt; else if (s.ni != null) pendingNI = parseFloat(s.ni); } } catch (e) {}
+const mode = () => $('smode').value;
+try { const s = migrate(JSON.parse(localStorage.getItem('mqwave2') || 'null')); if (s) { ids.forEach(k => { if (s[k] != null) $(k).value = s[k]; }); $('smode').value = s.smode === 'volt' ? 'volt' : (s.smode === 'auto' ? 'auto' : (s.volt != null ? 'volt' : 'auto'));
+  if (mode() === 'volt') { if (s.vmax != null) $('volt').max = s.vmax; if (s.volt != null) $('volt').value = s.volt; else if (s.ni != null) pendingNI = parseFloat(s.ni); }
+  else { if (s.pos != null) $('volt').value = s.pos; else if (s.ni != null) pendingNI = parseFloat(s.ni); } } } catch (e) {}
 let state = null;
 
 function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
@@ -486,24 +494,38 @@ function rebuild() {
   const niSat = hi;
   const sat = MODEL.solve(pre, niSat, mat);
   const satM = MODEL.metrics(sat, v.poles);
-  const sl = $('volt'); sl.max = v.vmax; sl.step = Math.max(1, Math.round(v.vmax / 600));
-  if (pendingNI != null) { sl.value = Math.min(v.vmax, Math.round(pendingNI / apv)); pendingNI = null; }
-  if (parseFloat(sl.value) > v.vmax) sl.value = v.vmax;
-  const curve = [];
-  for (let i = 0; i <= 40; i++) { const vv = v.vmax * i / 40, r = MODEL.solve(pre, vv * apv, mat); curve.push({ vv, pk: MODEL.metrics(r, v.poles).peak, sf: r.satFrac }); }
-  state = { v, g, mat, pre, preNo, sat, satM, curve, pu, apv, niSat, satOk: ok, vSat: niSat / apv };
+  const sl = $('volt'), auto = mode() === 'auto';
+  $('mcFields').classList.toggle('dimf', auto);
+  document.querySelectorAll('#mcFields input').forEach(el => { el.disabled = auto; });
+  if (auto) {
+    sl.max = 1000; sl.step = 1;
+    if (pendingNI != null) { sl.value = Math.min(1000, Math.round(pendingNI / niSat * 1000)); pendingNI = null; }
+  } else {
+    sl.max = v.vmax; sl.step = Math.max(1, Math.round(v.vmax / 600));
+    if (pendingNI != null) { sl.value = Math.min(v.vmax, Math.round(pendingNI / apv)); pendingNI = null; }
+    if (parseFloat(sl.value) > v.vmax) sl.value = v.vmax;
+  }
+  const XM = auto ? niSat : v.vmax, curve = [];
+  for (let i = 0; i <= 40; i++) { const vv = XM * i / 40, r = MODEL.solve(pre, auto ? vv : vv * apv, mat); curve.push({ vv, pk: MODEL.metrics(r, v.poles).peak, sf: r.satFrac }); }
+  $('cTitle').textContent = auto ? '峰值與充飽比例 vs NI' : '峰值與充飽比例 vs 充電電壓';
+  state = { v, g, mat, pre, preNo, sat, satM, curve, pu, apv, niSat, satOk: ok, vSat: niSat / apv, auto, XM };
   update();
 }
 
 function update() {
-  const volt = parseFloat($('volt').value);
-  $('vOut').textContent = Math.round(volt);
-  try { const s = {}; ids.forEach(k => s[k] = $(k).value); s.volt = volt; localStorage.setItem('mqwave2', JSON.stringify(s)); } catch (e) {}
+  const sv = parseFloat($('volt').value), auto = mode() === 'auto';
+  try { const s = {}; ids.forEach(k => s[k] = $(k).value); s.smode = mode(); if (auto) s.pos = sv; else s.volt = sv; localStorage.setItem('mqwave2', JSON.stringify(s)); } catch (e) {}
   if (!state) return;
   const { v, pre, preNo, mat, sat, satM, apv } = state;
-  const ni = volt * apv;
-  $('v99').textContent = state.satOk ? (state.vSat <= v.vmax ? '充飽 99% 約需 ' + Math.round(state.vSat) + ' V' : '充飽 99% 約需 ' + Math.round(state.vSat) + ' V（超過上限）') : '';
-  $('v99').style.color = state.satOk && state.vSat > v.vmax ? 'var(--err)' : '';
+  const ni = auto ? sv / 1000 * state.niSat : sv * apv, volt = auto ? null : sv;
+  if (auto) {
+    $('vOut').textContent = (ni / 1000).toFixed(1); $('vUnit').textContent = 'kAT';
+    $('v99').textContent = '充飽 NI 的 ' + (sv / 10).toFixed(0) + '%'; $('v99').style.color = '';
+  } else {
+    $('vOut').textContent = Math.round(sv); $('vUnit').textContent = 'V';
+    $('v99').textContent = state.satOk ? (state.vSat <= v.vmax ? '充飽 99% 約需 ' + Math.round(state.vSat) + ' V' : '充飽 99% 約需 ' + Math.round(state.vSat) + ' V（超過上限）') : '';
+    $('v99').style.color = state.satOk && state.vSat > v.vmax ? 'var(--err)' : '';
+  }
   const r = MODEL.solve(pre, ni, mat, { keepMag: true });
   const m = MODEL.metrics(r, v.poles);
   const rn = ($('oNo').checked && preNo) ? MODEL.solve(preNo, ni, mat) : null;
@@ -527,9 +549,9 @@ function update() {
   const rp = (v.id / 2 - v.probeD) / 1000;
   const flux = m.avgArea * 1e-4 * (Math.PI / 180) * rp * (v.h / 1000) * 1e6;
   $('aF').textContent = m.avgArea > 0 ? flux.toFixed(1) + ' μWb' : '-';
-  state.last = { r, rn, m, ni, volt };
+  state.last = { r, rn, m, ni, volt, auto, pos: auto ? sv / 10 : null };
   drawWave(r, rn, m);
-  drawCurve(volt);
+  drawCurve(auto ? ni : sv);
   drawMag(r);
 }
 
@@ -574,7 +596,7 @@ function drawWave(r, rn, met, tgt) {
 
 function drawCurve(volt) {
   const { x, w, h } = setupCanvas($('cc'));
-  const { curve, v } = state, VM = v.vmax;
+  const { curve, v } = state, VM = state.XM;
   const L = 52, R = 40, T = 12, B = 34, pw = w - L - R, ph = h - T - B;
   let mx = 0; curve.forEach(c => mx = Math.max(mx, c.pk)); mx = Math.max(mx * 1.1, 100);
   const st = niceStep(mx, 4); mx = Math.ceil(mx / st) * st;
@@ -583,8 +605,8 @@ function drawCurve(volt) {
   for (let y = 0; y <= mx + 1e-6; y += st) { x.beginPath(); x.moveTo(L, Y(y)); x.lineTo(L + pw, Y(y)); x.stroke(); x.textAlign = 'right'; x.fillText(Math.round(y), L - 6, Y(y) + 4); }
   x.textAlign = 'left'; [0, 0.5, 1].forEach(f => x.fillText((f * 100) + '%', L + pw + 6, Y2(f) + 4));
   const vs = niceStep(VM, 5);
-  x.textAlign = 'center'; for (let n = 0; n <= VM + 1e-6; n += vs) x.fillText(Math.round(n) + ' V', X(n), T + ph + 18);
-  if (state.satOk && state.vSat <= VM) {
+  x.textAlign = 'center'; for (let n = 0; n <= VM + 1e-6; n += vs) x.fillText(state.auto ? +(n / 1000).toFixed(1) + ' kAT' : Math.round(n) + ' V', X(n), T + ph + 18);
+  if (!state.auto && state.satOk && state.vSat <= VM) {
     x.strokeStyle = css('--accent2'); x.setLineDash([2, 3]); x.beginPath(); x.moveTo(X(state.vSat), T); x.lineTo(X(state.vSat), T + ph); x.stroke(); x.setLineDash([]);
     x.fillStyle = css('--accent2'); x.textAlign = 'right'; x.fillText('充飽 99%', X(state.vSat) - 4, T + 14); x.fillStyle = css('--muted');
   }
@@ -634,6 +656,7 @@ function drawMag(r) {
 let tm = null;
 ids.forEach(k => $(k).addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(rebuild, 200); }));
 $('volt').addEventListener('input', update);
+$('smode').addEventListener('change', () => { if (state && state.last) pendingNI = state.last.ni; rebuild(); });
 ['oSat', 'oNo', 'oRange'].forEach(k => $(k).addEventListener('change', update));
 window.addEventListener('resize', () => { clearTimeout(tm); tm = setTimeout(update, 150); });
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', update);
@@ -643,8 +666,8 @@ fields.forEach((el, i) => {
   el.addEventListener('keydown', e => {
     if (e.key !== 'Tab' || e.altKey || e.ctrlKey || e.metaKey) return;
     e.preventDefault();
-    const n = fields.length, next = fields[(i + (e.shiftKey ? -1 : 1) + n) % n];
-    next.focus();
+    const n = fields.length, d = e.shiftKey ? -1 : 1;
+    for (let j = 1; j <= n; j++) { const nx = fields[(i + d * j + n * n) % n]; if (!nx.disabled) { nx.focus(); break; } }
   });
   el.addEventListener('focus', () => { try { el.select(); } catch (err) {} });
 });
@@ -672,8 +695,8 @@ function buildImage() {
     ['探棒', [['距內表面 / 自頂面深度', v.probeD + ' / ' + v.probeDepth + ' mm']]],
     ['材料', [['Br / Hcj', v.br + ' T / ' + v.hcj + ' kOe']]],
     ['充磁夾具', [['夾具間隙 / 導體深度', v.fixGap + ' / ' + v.depth + ' mm'], ['每槽匝數', v.turns]]],
-    ['充磁機', [['C / L / R', v.capC + ' μF / ' + v.indL + ' μH / ' + v.resR + ' mΩ']]],
-    ['充磁', [['充電電壓 / 能量', Math.round(state.last.volt) + ' V / ' + (0.5 * v.capC * 1e-6 * state.last.volt ** 2 / 1000).toFixed(2) + ' kJ'], ['峰值電流 / NI', (ni / v.turns / 1000).toFixed(2) + ' kA / ' + (ni / 1000).toFixed(1) + ' kAT'], ['極中心場強', r.hCenter.toFixed(2) + ' T'], ['已充飽體積', (r.satFrac * 100).toFixed(0) + '%'], ['充磁時軛鐵作用', v.ty > 0 ? (r.eta * 100).toFixed(0) + '%' : '無軛鐵']]],
+    ...(state.last.auto ? [] : [['充磁機', [['C / L / R', v.capC + ' μF / ' + v.indL + ' μH / ' + v.resR + ' mΩ']]]]),
+    ['充磁', [state.last.auto ? ['佔充飽 99% 所需 NI', state.last.pos.toFixed(0) + '%'] : ['充電電壓 / 能量', Math.round(state.last.volt) + ' V / ' + (0.5 * v.capC * 1e-6 * state.last.volt ** 2 / 1000).toFixed(2) + ' kJ'], ['峰值電流 / NI', (ni / v.turns / 1000).toFixed(2) + ' kA / ' + (ni / 1000).toFixed(1) + ' kAT'], ['極中心場強', r.hCenter.toFixed(2) + ' T'], ['已充飽體積', (r.satFrac * 100).toFixed(0) + '%'], ['充磁時軛鐵作用', v.ty > 0 ? (r.eta * 100).toFixed(0) + '%' : '無軛鐵']]],
     null,
     ['波形', [['峰值', m.peak.toFixed(0) + ' G'], ['極中心值', m.center.toFixed(0) + ' G'], ['極中心 / 峰值', m.peak > 1 ? m.horn.toFixed(2) : '-'], ['基波振幅', m.h1.toFixed(0) + ' G'], ['THD', m.peak > 1 ? (m.thd * 100).toFixed(0) + '%' : '-'], ['峰值 / 飽和', satM.peak > 0 ? (m.peak / satM.peak * 100).toFixed(1) + '%' : '-']]],
     ['磁通量', [['單極面積', Math.round(m.avgArea).toLocaleString() + ' G·°'], ['單極面積 / 飽和', satM.avgArea > 0 ? (m.avgArea / satM.avgArea * 100).toFixed(1) + '%' : '-'], ['N / S 單極面積', Math.round(m.areaN).toLocaleString() + ' / ' + Math.round(m.areaS).toLocaleString()], ['單極磁通（估）', flux], ['軛鐵磁通密度（估）', r.yokeB == null ? '無軛鐵' : r.yokeB.toFixed(2) + ' T']]],
@@ -741,7 +764,7 @@ function fillSel(sel) {
   });
   if (sel) pSel.value = sel;
 }
-function snapshot() { const v = {}; ids.forEach(k => v[k] = $(k).value); v.volt = $('volt').value; return v; }
+function snapshot() { const v = {}; ids.forEach(k => v[k] = $(k).value); v.smode = mode(); if (mode() === 'volt') v.volt = $('volt').value; if (state && state.last) v.ni = String(Math.round(state.last.ni)); return v; }
 const armed = {};
 function arm(btn, key, label) {
   if (armed[key]) return true;
@@ -769,8 +792,9 @@ $('pLoad').addEventListener('click', () => {
   const p = presets.find(p => p.name === pSel.value);
   if (!p) { msg('請先選擇要載入的參數組', true); return; }
   ids.forEach(k => { if (p.v[k] != null) $(k).value = p.v[k]; });
-  if (p.v.vmax != null) $('volt').max = p.v.vmax;
-  if (p.v.volt != null) $('volt').value = p.v.volt; else if (p.v.ni != null) pendingNI = parseFloat(p.v.ni);
+  $('smode').value = p.v.smode === 'volt' || (p.v.smode == null && p.v.volt != null) ? 'volt' : 'auto';
+  if (mode() === 'volt' && p.v.volt != null) { if (p.v.vmax != null) $('volt').max = p.v.vmax; $('volt').value = p.v.volt; }
+  else if (p.v.ni != null) pendingNI = parseFloat(p.v.ni);
   pName.value = p.name; rebuild(); msg('已載入「' + p.name + '」');
 });
 $('pDel').addEventListener('click', () => {
@@ -803,6 +827,7 @@ $('pFile').addEventListener('change', e => {
         migrate(p.v);
         const rec = { name: p.name.slice(0, 60), saved: p.saved || new Date().toISOString(), v: {} };
         ids.concat('volt', 'ni').forEach(k => { if (p.v[k] != null && isFinite(parseFloat(p.v[k]))) rec.v[k] = String(p.v[k]); });
+        if (p.v.smode === 'auto' || p.v.smode === 'volt') rec.v.smode = p.v.smode;
         const i = presets.findIndex(q => q.name === rec.name);
         if (i >= 0) presets[i] = rec; else presets.push(rec); n++;
       });
@@ -1132,7 +1157,8 @@ const H = {
   aNS: { t: 'N / S 單極面積', d: () => dWave('ns'), b: `<p>所有 N 極與所有 S 極的單極面積<strong>各自的平均值</strong>。</p><p>實際產品中，N、S 不平衡常來自夾具公差、磁環偏心或充磁不足，是重要的品管指標。本模型假設完全對稱，所以兩者相同；比對實測時可用來觀察偏差。</p>` },
   aF: { t: '單極磁通（估）', d: () => dWave('area') + dSide(''), b: `<p>一個極穿過探棒所在圓柱面的<strong>總磁通</strong>估算值，單位 μWb：</p><p style="text-align:center"><strong>Φ ≈ 單極面積 × (π/180) × 探棒半徑 × 磁環高度</strong></p><p>這是以探棒高度處的波形代表整個軸向高度的粗估，端部漏磁會讓實際值略低。可用於估算反電動勢常數或比較不同方案。</p>` },
   presets: { t: '參數組', b: `<p>把目前左側所有參數與充磁強度存成一組，日後一鍵載入。</p><ul><li><strong>儲存：</strong>輸入名稱後按「儲存」；名稱已存在時會要求再按一次確認覆蓋。從下拉選單選一組時，名稱會自動帶入，方便修改後覆蓋。</li><li><strong>載入：</strong>選擇參數組後按「載入」，所有欄位與滑桿會一起還原。</li><li><strong>刪除：</strong>需再按一次確認。</li><li><strong>匯出／匯入檔案：</strong>把所有參數組存成 .json 檔，可用來備份、換電腦或分享給同事；匯入時同名的參數組會被覆蓋。</li></ul><p>參數組只存在<strong>你這台電腦的這個瀏覽器</strong>裡，不會上傳到任何伺服器，其他人看不到。清除瀏覽器資料或換瀏覽器後會消失，重要的參數請定期匯出備份。</p>` },
-  volt: { t: '充電電壓（充磁強度）', d: () => dCurve('pulse'), b: `<p>充磁機電容的<strong>充電電壓 V</strong>，也就是實際操作充磁機時設定的值。滑桿範圍為 0 到「最高充電電壓」。</p><p>放電為 RLC 電路，峰值電流與電壓成正比：</p><p style="text-align:center"><strong>I<sub>pk</sub> = V × √(C/L) × e<sup>−α·t<sub>p</sub></sup></strong>（欠阻尼時；α = R / 2L）</p><p>所以 NI（= 每槽匝數 × I<sub>pk</sub>）與電壓<strong>線性</strong>成正比，但波形峰值與充飽程度經過 MQ 的 S 形初始充磁曲線後，對電壓是<strong>非線性</strong>的。放電能量 = ½CV²。</p><p>未計脈衝渦流與夾具溫升造成的電阻變化；請以實測校正 L、R。</p>` },
+  volt: { t: '充磁強度', d: () => dCurve('pulse'), b: `<p>滑桿有兩種模式（在左側「充磁強度設定」切換）：</p><ul><li><strong>依幾何自動：</strong>滑桿單位為夾具每槽安匝 NI（kAT）。程式依目前幾何與材料算出「已充飽體積達 99%」所需的 NI，作為滑桿上限與飽和參考；所以不論磁環大小，滑桿都能拖滿 0–100%。適合沒有充磁機參數時使用。</li><li><strong>充磁機電壓：</strong>滑桿單位為充電電壓 V，由電容 C、電感 L、電阻 R 以 RLC 放電公式算出峰值電流：I<sub>pk</sub> = V × √(C/L) × e<sup>−α·t<sub>p</sub></sup>（欠阻尼時；α = R / 2L）。</li></ul><p>兩種模式下 NI（= 每槽匝數 × 峰值電流）都與滑桿線性成正比，但波形峰值與充飽程度經過 MQ 的 S 形初始充磁曲線後是<strong>非線性</strong>的。</p>` },
+  smode: { t: '滑桿模式', d: '', b: `<p>選擇充磁強度滑桿的操作方式：</p><ul><li><strong>依幾何自動</strong>（預設）：不需要充磁機參數。滑桿上限 = 這組幾何「充飽 99%」所需的安匝數 NI，滑桿位置代表佔該 NI 的百分比；改變尺寸時，滑桿位置（百分比）保持不變。下方的充磁機參數會變灰停用。</li><li><strong>充磁機電壓</strong>：輸入充磁機的電容、迴路電感、電阻與最高電壓後，滑桿直接以充電電壓操作，並顯示充飽約需多少伏特。</li></ul><p>切換模式時，會盡量保持目前的 NI 不變。</p>` },
   capC: { t: '電容 C', d: () => dCurve('pulse'), b: `<p>充磁機儲能電容的<strong>總電容量</strong>，單位 μF，可在充磁機銘牌或規格書查到。</p><p>電容越大，能量（½CV²）越大、脈衝越寬；在電感固定時，峰值電流約與 √C 成正比（欠阻尼時）。</p>` },
   indL: { t: '迴路電感 L', d: () => dCurve('pulse'), b: `<p>放電迴路的<strong>總電感</strong>，單位 μH：主要是充磁夾具線圈的電感，加上電纜與充磁機內部電感。</p><p>電感越大，峰值電流越低、脈衝越寬。夾具電感可用 LCR 錶在低頻量測（實際脈衝時鐵心飽和，有效電感會比量測值低）。最準的做法是用電流探頭量一次實際峰值電流，再回推調整 L。</p>` },
   resR: { t: '迴路電阻 R', d: () => dCurve('pulse'), b: `<p>放電迴路的<strong>總電阻</strong>，單位 mΩ：夾具線圈、電纜、接點與充磁機內部的電阻總和。</p><p>電阻造成能量損耗並降低峰值電流；電阻大到 R ≥ 2√(L/C) 時電流變成過阻尼（不振盪）。多次連續充磁後線圈溫度上升，電阻會變大。</p>` },
