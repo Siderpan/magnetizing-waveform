@@ -126,20 +126,26 @@ h2{display:flex;align-items:center;gap:6px}
 <div class="card"><h2>充磁夾具</h2>
 <div class="f"><div class="lb"><label for="fixGap">夾具與磁環間隙 (mm)</label><button type="button" class="info" data-k="fixGap" aria-label="說明：夾具與磁環間隙 (mm)">?</button></div><input id="fixGap" type="number" step="0.05" min="0" value="0.2"></div>
 <div class="f"><div class="lb"><label for="depth">導體中心距夾具表面 (mm)</label><button type="button" class="info" data-k="depth" aria-label="說明：導體中心距夾具表面 (mm)">?</button></div><input id="depth" type="number" step="0.1" min="0.1" value="1.0"></div>
-<div class="f"><div class="lb"><label for="turns">每槽匝數（換算電流用）</label><button type="button" class="info" data-k="turns" aria-label="說明：每槽匝數（換算電流用）">?</button></div><input id="turns" type="number" step="1" min="1" value="4"></div>
+<div class="f"><div class="lb"><label for="turns">每槽匝數</label><button type="button" class="info" data-k="turns" aria-label="說明：每槽匝數">?</button></div><input id="turns" type="number" step="1" min="1" value="4"></div>
+</div>
+<div class="card"><h2>充磁機（電容放電）</h2>
+<div class="f"><div class="lb"><label for="capC">電容 C (μF)</label><button type="button" class="info" data-k="capC" aria-label="說明：電容 C (μF)">?</button></div><input id="capC" type="number" step="100" min="1" value="3000"></div>
+<div class="f"><div class="lb"><label for="indL">迴路電感 L (μH)</label><button type="button" class="info" data-k="indL" aria-label="說明：迴路電感 L (μH)">?</button></div><input id="indL" type="number" step="1" min="0.1" value="40"></div>
+<div class="f"><div class="lb"><label for="resR">迴路電阻 R (mΩ)</label><button type="button" class="info" data-k="resR" aria-label="說明：迴路電阻 R (mΩ)">?</button></div><input id="resR" type="number" step="1" min="0" value="40"></div>
+<div class="f"><div class="lb"><label for="vmax">最高充電電壓 (V)</label><button type="button" class="info" data-k="vmax" aria-label="說明：最高充電電壓 (V)">?</button></div><input id="vmax" type="number" step="100" min="10" value="3000"></div>
 </div>
 <div class="err" id="err" role="alert"></div>
 </aside>
 
 <main class="main">
 <div class="card nibar">
-<h2>充磁強度<button type="button" class="info" data-k="ni" aria-label="說明：充磁強度">?</button></h2>
+<h2>充磁強度<button type="button" class="info" data-k="volt" aria-label="說明：充電電壓">?</button></h2>
 <div class="ctrl">
-<input type="range" id="ni" min="0" max="120000" step="500" value="60000" aria-label="充磁安匝數">
-<div><span class="big" id="niOut">60.0</span> <span style="color:var(--muted)">kAT（每槽安匝）</span></div>
+<input type="range" id="volt" min="0" max="3000" step="5" value="2250" aria-label="充電電壓">
+<div><span class="big" id="vOut">2250</span> <span style="color:var(--muted)">V</span> <span class="sm" id="v99"></span></div>
 </div>
 <div class="reads">
-<div class="m"><div class="l">對應峰值電流<button type="button" class="info" data-k="rI" aria-label="說明：對應峰值電流">?</button></div><div class="v" id="rI">-</div></div>
+<div class="m"><div class="l">峰值電流 / NI<button type="button" class="info" data-k="rI" aria-label="說明：峰值電流與安匝數">?</button></div><div class="v" id="rI">-</div></div>
 <div class="m"><div class="l">極中心場強<button type="button" class="info" data-k="rH" aria-label="說明：極中心內表面場強 μ0H">?</button></div><div class="v" id="rH">-</div></div>
 <div class="m"><div class="l">已充飽體積<button type="button" class="info" data-k="rS" aria-label="說明：已充飽體積（≥95%）">?</button></div><div class="v" id="rS">-</div></div>
 <div class="m"><div class="l">峰值 / 飽和<button type="button" class="info" data-k="rP" aria-label="說明：峰值 / 飽和峰值">?</button></div><div class="v" id="rP">-</div></div>
@@ -151,7 +157,7 @@ h2{display:flex;align-items:center;gap:6px}
 <h2 style="justify-content:space-between"><span style="display:flex;align-items:center;gap:6px">表面高斯波形 Bn<button type="button" class="info" data-k="bn" aria-label="說明：表面高斯波形 Bn">?</button></span><span style="display:flex;align-items:center;gap:10px"><span class="pmsg" id="cpMsg" role="status" style="font-weight:400"></span><button type="button" class="btn" id="cpImg" style="font-weight:400">複製圖片</button></span></h2>
 <canvas id="cw" height="440" data-aspect="0.55"></canvas>
 <div class="opts">
-<label><input type="checkbox" id="oSat" checked><span class="leg" style="border-top:2px dashed var(--ref)"></span>飽和參考（120 kAT）</label><button type="button" class="info" data-k="satref" aria-label="說明：飽和參考">?</button>
+<label><input type="checkbox" id="oSat" checked><span class="leg" style="border-top:2px dashed var(--ref)"></span>飽和參考（充飽 99%）</label><button type="button" class="info" data-k="satref" aria-label="說明：飽和參考">?</button>
 <label><input type="checkbox" id="oNo"><span class="leg" style="border-top:2px dotted var(--accent2)"></span>對照：充磁時不裝軛鐵</label><button type="button" class="info" data-k="compare" aria-label="說明：充磁時不裝軛鐵">?</button>
 <label>顯示範圍 <select id="oRange" style="height:26px;border:1px solid var(--line2);border-radius:6px;background:transparent;color:var(--text)"><option value="all">全周 360°</option><option value="pair">一對極</option></select></label>
 </div>
@@ -175,7 +181,7 @@ h2{display:flex;align-items:center;gap:6px}
 </div>
 
 <div class="two">
-<div class="card"><h2>峰值與充飽比例 vs 充磁強度<button type="button" class="info" data-k="curve" aria-label="說明：峰值與充飽比例 vs 充磁強度">?</button></h2><canvas id="cc" height="300"></canvas>
+<div class="card"><h2>峰值與充飽比例 vs 充電電壓<button type="button" class="info" data-k="curve" aria-label="說明：峰值與充飽比例 vs 充磁強度">?</button></h2><canvas id="cc" height="300"></canvas>
 <div class="opts"><span><span class="leg" style="border-top:2px solid var(--accent)"></span>峰值</span><span><span class="leg" style="border-top:2px dashed var(--accent2)"></span>充飽體積比例</span></div></div>
 <div class="card"><h2>磁化方向分佈（一對極的截面展開）<button type="button" class="info" data-k="magmap" aria-label="說明：磁化方向分佈（一對極的截面展開）">?</button></h2><canvas id="cm" height="300"></canvas>
 <div class="opts"><span>箭頭長度與深淺 = 磁化程度 M/Br；上方灰帶為軛鐵，下方圓點為夾具槽內導體</span></div></div>
@@ -413,12 +419,22 @@ if (typeof module !== 'undefined') module.exports = MODEL;
 </script>
 <script>
 (() => {
-const ids = ['poles','id','od','h','ty','gap','bs','probeD','probeDepth','br','hcj','fixGap','depth','turns'];
+const ids = ['poles','id','od','h','ty','gap','bs','probeD','probeDepth','br','hcj','fixGap','depth','turns','capC','indL','resR','vmax'];
 // 舊資料相容：probeZ（自底面高度）→ probeDepth（自頂面深度）
 const migrate = o => { if (o && o.probeDepth == null && o.probeZ != null) { const h = parseFloat(o.h ?? 10), z = parseFloat(o.probeZ); if (isFinite(h) && isFinite(z)) o.probeDepth = String(+(h - z).toFixed(4)); } delete o?.probeZ; return o; };
 const $ = id => document.getElementById(id);
-const NI_SAT = 120000;
-try { const s = migrate(JSON.parse(localStorage.getItem('mqwave2') || 'null')); if (s) { ids.forEach(k => { if (s[k] != null) $(k).value = s[k]; }); if (s.ni != null) $('ni').value = s.ni; } } catch (e) {}
+// 電容放電峰值電流 / 充電電壓（A/V）與到達峰值時間
+function pulse(v) {
+  const C = v.capC * 1e-6, L = v.indL * 1e-6, R = v.resR * 1e-3;
+  const a = R / (2 * L), w0 = 1 / Math.sqrt(L * C);
+  let k, tp;
+  if (a < w0 * 0.999) { const wd = Math.sqrt(w0 * w0 - a * a); tp = Math.atan2(wd, a) / wd; k = Math.exp(-a * tp) / (w0 * L); }
+  else if (a > w0 * 1.001) { const q = Math.sqrt(a * a - w0 * w0), a1 = a - q, a2 = a + q; tp = Math.log(a2 / a1) / (a2 - a1); k = (Math.exp(-a1 * tp) - Math.exp(-a2 * tp)) / (L * (a2 - a1)); }
+  else { tp = 1 / a; k = 1 / (L * a * Math.E); }
+  return { k, tp };
+}
+let pendingNI = null;
+try { const s = migrate(JSON.parse(localStorage.getItem('mqwave2') || 'null')); if (s) { ids.forEach(k => { if (s[k] != null) $(k).value = s[k]; }); if (s.vmax != null) $('volt').max = s.vmax; if (s.volt != null) $('volt').value = s.volt; else if (s.ni != null) pendingNI = parseFloat(s.ni); } } catch (e) {}
 let state = null;
 
 function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
@@ -437,6 +453,10 @@ function read() {
   if (!(v.fixGap >= 0) || v.fixGap >= v.id / 2) e.push('夾具間隙須 ≥ 0 且小於內半徑');
   if (!(v.depth > 0) || v.fixGap + v.depth >= v.id / 2) e.push('導體深度須 > 0，且夾具間隙 + 導體深度小於內半徑');
   if (!(v.bs > 0)) e.push('軛鐵 Bs 須 > 0');
+  if (!(v.capC > 0)) e.push('電容須 > 0');
+  if (!(v.indL > 0)) e.push('迴路電感須 > 0');
+  if (!(v.resR >= 0)) e.push('迴路電阻須 ≥ 0');
+  if (!(v.vmax > 0)) e.push('最高充電電壓須 > 0');
   if (!(v.turns >= 1)) e.push('匝數須 ≥ 1');
   return { v, e };
 }
@@ -458,24 +478,37 @@ function rebuild() {
   const mat = { br: v.br, hcj: v.hcj };
   const pre = MODEL.prepare(g, true);
   const preNo = v.ty > 0 ? MODEL.prepare(g, false) : null;
-  const sat = MODEL.solve(pre, NI_SAT, mat);
+  const pu = pulse(v), apv = pu.k * v.turns; // 每伏特的安匝數
+  // 真正飽和參考：已充飽體積 ≥ 99% 所需的 NI
+  let lo = 0, hi = 20000, ok = false;
+  while (hi <= 5e6) { if (MODEL.solve(pre, hi, mat).satFrac >= 0.99) { ok = true; break; } lo = hi; hi *= 2; }
+  if (ok) for (let i = 0; i < 14; i++) { const mid = (lo + hi) / 2; if (MODEL.solve(pre, mid, mat).satFrac >= 0.99) hi = mid; else lo = mid; }
+  const niSat = hi;
+  const sat = MODEL.solve(pre, niSat, mat);
   const satM = MODEL.metrics(sat, v.poles);
+  const sl = $('volt'); sl.max = v.vmax; sl.step = Math.max(1, Math.round(v.vmax / 600));
+  if (pendingNI != null) { sl.value = Math.min(v.vmax, Math.round(pendingNI / apv)); pendingNI = null; }
+  if (parseFloat(sl.value) > v.vmax) sl.value = v.vmax;
   const curve = [];
-  for (let ni = 0; ni <= NI_SAT; ni += 3000) { const r = MODEL.solve(pre, ni, mat); curve.push({ ni, pk: MODEL.metrics(r, v.poles).peak, sf: r.satFrac }); }
-  state = { v, g, mat, pre, preNo, sat, satM, curve };
+  for (let i = 0; i <= 40; i++) { const vv = v.vmax * i / 40, r = MODEL.solve(pre, vv * apv, mat); curve.push({ vv, pk: MODEL.metrics(r, v.poles).peak, sf: r.satFrac }); }
+  state = { v, g, mat, pre, preNo, sat, satM, curve, pu, apv, niSat, satOk: ok, vSat: niSat / apv };
   update();
 }
 
 function update() {
-  const ni = parseFloat($('ni').value);
-  $('niOut').textContent = (ni / 1000).toFixed(1);
-  try { const s = {}; ids.forEach(k => s[k] = $(k).value); s.ni = ni; localStorage.setItem('mqwave2', JSON.stringify(s)); } catch (e) {}
+  const volt = parseFloat($('volt').value);
+  $('vOut').textContent = Math.round(volt);
+  try { const s = {}; ids.forEach(k => s[k] = $(k).value); s.volt = volt; localStorage.setItem('mqwave2', JSON.stringify(s)); } catch (e) {}
   if (!state) return;
-  const { v, pre, preNo, mat, sat, satM } = state;
+  const { v, pre, preNo, mat, sat, satM, apv } = state;
+  const ni = volt * apv;
+  $('v99').textContent = state.satOk ? (state.vSat <= v.vmax ? '充飽 99% 約需 ' + Math.round(state.vSat) + ' V' : '充飽 99% 約需 ' + Math.round(state.vSat) + ' V（超過上限）') : '';
+  $('v99').style.color = state.satOk && state.vSat > v.vmax ? 'var(--err)' : '';
   const r = MODEL.solve(pre, ni, mat, { keepMag: true });
   const m = MODEL.metrics(r, v.poles);
   const rn = ($('oNo').checked && preNo) ? MODEL.solve(preNo, ni, mat) : null;
-  $('rI').textContent = (ni / v.turns / 1000).toFixed(2) + ' kA';
+  const ipk = ni / v.turns / 1000;
+  $('rI').innerHTML = ipk.toFixed(ipk < 10 ? 2 : 1) + ' kA <span class="sm">' + (ni / 1000).toFixed(ni < 1e5 ? 1 : 0) + ' kAT</span>';
   $('rH').innerHTML = r.hCenter.toFixed(2) + ' T <span class="sm">' + (r.hCenter * 10).toFixed(1) + ' kOe</span>';
   $('rS').textContent = (r.satFrac * 100).toFixed(0) + '%';
   $('rE').innerHTML = v.ty > 0 ? (r.eta * 100).toFixed(0) + '%' + (r.eta < 0.5 ? ' <span class="sm">已飽和</span>' : '') : '無軛鐵';
@@ -494,9 +527,9 @@ function update() {
   const rp = (v.id / 2 - v.probeD) / 1000;
   const flux = m.avgArea * 1e-4 * (Math.PI / 180) * rp * (v.h / 1000) * 1e6;
   $('aF').textContent = m.avgArea > 0 ? flux.toFixed(1) + ' μWb' : '-';
-  state.last = { r, rn, m, ni };
+  state.last = { r, rn, m, ni, volt };
   drawWave(r, rn, m);
-  drawCurve(ni);
+  drawCurve(volt);
   drawMag(r);
 }
 
@@ -539,23 +572,28 @@ function drawWave(r, rn, met, tgt) {
   line(r.wave, css('--accent'), [], 2.2);
 }
 
-function drawCurve(ni) {
+function drawCurve(volt) {
   const { x, w, h } = setupCanvas($('cc'));
-  const { curve } = state;
+  const { curve, v } = state, VM = v.vmax;
   const L = 52, R = 40, T = 12, B = 34, pw = w - L - R, ph = h - T - B;
   let mx = 0; curve.forEach(c => mx = Math.max(mx, c.pk)); mx = Math.max(mx * 1.1, 100);
   const st = niceStep(mx, 4); mx = Math.ceil(mx / st) * st;
-  const X = n => L + pw * n / NI_SAT, Y = val => T + ph - val / mx * ph, Y2 = f => T + ph - f * ph;
-  x.font = '13.5px sans-serif'; x.fillStyle = css('--muted'); x.strokeStyle = css('--line'); x.lineWidth = 1;
+  const X = n => L + pw * n / VM, Y = val => T + ph - val / mx * ph, Y2 = f => T + ph - f * ph;
+  x.font = '13.5px ' + FONT; x.fillStyle = css('--muted'); x.strokeStyle = css('--line'); x.lineWidth = 1;
   for (let y = 0; y <= mx + 1e-6; y += st) { x.beginPath(); x.moveTo(L, Y(y)); x.lineTo(L + pw, Y(y)); x.stroke(); x.textAlign = 'right'; x.fillText(Math.round(y), L - 6, Y(y) + 4); }
   x.textAlign = 'left'; [0, 0.5, 1].forEach(f => x.fillText((f * 100) + '%', L + pw + 6, Y2(f) + 4));
-  x.textAlign = 'center'; for (let n = 0; n <= NI_SAT; n += 30000) x.fillText((n / 1000) + ' kAT', X(n), T + ph + 18);
-  x.strokeStyle = css('--accent'); x.lineWidth = 2; x.beginPath(); curve.forEach((c, i) => i ? x.lineTo(X(c.ni), Y(c.pk)) : x.moveTo(X(c.ni), Y(c.pk))); x.stroke();
-  x.strokeStyle = css('--accent2'); x.setLineDash([5, 4]); x.lineWidth = 1.6; x.beginPath(); curve.forEach((c, i) => i ? x.lineTo(X(c.ni), Y2(c.sf)) : x.moveTo(X(c.ni), Y2(c.sf))); x.stroke(); x.setLineDash([]);
-  x.strokeStyle = css('--line2'); x.beginPath(); x.moveTo(X(ni), T); x.lineTo(X(ni), T + ph); x.stroke();
-  const i0 = Math.min(curve.length - 2, Math.floor(ni / 3000)), t = ni / 3000 - i0;
+  const vs = niceStep(VM, 5);
+  x.textAlign = 'center'; for (let n = 0; n <= VM + 1e-6; n += vs) x.fillText(Math.round(n) + ' V', X(n), T + ph + 18);
+  if (state.satOk && state.vSat <= VM) {
+    x.strokeStyle = css('--accent2'); x.setLineDash([2, 3]); x.beginPath(); x.moveTo(X(state.vSat), T); x.lineTo(X(state.vSat), T + ph); x.stroke(); x.setLineDash([]);
+    x.fillStyle = css('--accent2'); x.textAlign = 'right'; x.fillText('充飽 99%', X(state.vSat) - 4, T + 14); x.fillStyle = css('--muted');
+  }
+  x.strokeStyle = css('--accent'); x.lineWidth = 2; x.beginPath(); curve.forEach((c, i) => i ? x.lineTo(X(c.vv), Y(c.pk)) : x.moveTo(X(c.vv), Y(c.pk))); x.stroke();
+  x.strokeStyle = css('--accent2'); x.setLineDash([5, 4]); x.lineWidth = 1.6; x.beginPath(); curve.forEach((c, i) => i ? x.lineTo(X(c.vv), Y2(c.sf)) : x.moveTo(X(c.vv), Y2(c.sf))); x.stroke(); x.setLineDash([]);
+  x.strokeStyle = css('--line2'); x.lineWidth = 1; x.beginPath(); x.moveTo(X(volt), T); x.lineTo(X(volt), T + ph); x.stroke();
+  const f = volt / VM * 40, i0 = Math.min(39, Math.floor(f)), t = f - i0;
   const pk = curve[i0].pk * (1 - t) + curve[i0 + 1].pk * t;
-  x.fillStyle = css('--accent'); x.beginPath(); x.arc(X(ni), Y(pk), 5, 0, 2 * Math.PI); x.fill();
+  x.fillStyle = css('--accent'); x.beginPath(); x.arc(X(volt), Y(pk), 5, 0, 2 * Math.PI); x.fill();
 }
 
 function drawMag(r) {
@@ -595,7 +633,7 @@ function drawMag(r) {
 
 let tm = null;
 ids.forEach(k => $(k).addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(rebuild, 200); }));
-$('ni').addEventListener('input', update);
+$('volt').addEventListener('input', update);
 ['oSat', 'oNo', 'oRange'].forEach(k => $(k).addEventListener('change', update));
 window.addEventListener('resize', () => { clearTimeout(tm); tm = setTimeout(update, 150); });
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', update);
@@ -614,7 +652,7 @@ fields.forEach((el, i) => {
 // ---------- 複製圖片 ----------
 function buildImage() {
   const { v, satM } = state, { r, rn, m, ni } = state.last;
-  const S = 2, W = 1500, H = 1000;
+  const S = 2, W = 1500, H = 1050;
   const cv = document.createElement('canvas'); cv.width = W * S; cv.height = H * S;
   const x = cv.getContext('2d'); x.scale(S, S);
   const F = (sz, wt) => (wt ? '500 ' : '') + sz + 'px ' + FONT;
@@ -634,7 +672,8 @@ function buildImage() {
     ['探棒', [['距內表面 / 自頂面深度', v.probeD + ' / ' + v.probeDepth + ' mm']]],
     ['材料', [['Br / Hcj', v.br + ' T / ' + v.hcj + ' kOe']]],
     ['充磁夾具', [['夾具間隙 / 導體深度', v.fixGap + ' / ' + v.depth + ' mm'], ['每槽匝數', v.turns]]],
-    ['充磁', [['NI / 峰值電流', (ni / 1000).toFixed(1) + ' kAT / ' + (ni / v.turns / 1000).toFixed(2) + ' kA'], ['極中心場強', r.hCenter.toFixed(2) + ' T'], ['已充飽體積', (r.satFrac * 100).toFixed(0) + '%'], ['充磁時軛鐵作用', v.ty > 0 ? (r.eta * 100).toFixed(0) + '%' : '無軛鐵']]],
+    ['充磁機', [['C / L / R', v.capC + ' μF / ' + v.indL + ' μH / ' + v.resR + ' mΩ']]],
+    ['充磁', [['充電電壓 / 能量', Math.round(state.last.volt) + ' V / ' + (0.5 * v.capC * 1e-6 * state.last.volt ** 2 / 1000).toFixed(2) + ' kJ'], ['峰值電流 / NI', (ni / v.turns / 1000).toFixed(2) + ' kA / ' + (ni / 1000).toFixed(1) + ' kAT'], ['極中心場強', r.hCenter.toFixed(2) + ' T'], ['已充飽體積', (r.satFrac * 100).toFixed(0) + '%'], ['充磁時軛鐵作用', v.ty > 0 ? (r.eta * 100).toFixed(0) + '%' : '無軛鐵']]],
     null,
     ['波形', [['峰值', m.peak.toFixed(0) + ' G'], ['極中心值', m.center.toFixed(0) + ' G'], ['極中心 / 峰值', m.peak > 1 ? m.horn.toFixed(2) : '-'], ['基波振幅', m.h1.toFixed(0) + ' G'], ['THD', m.peak > 1 ? (m.thd * 100).toFixed(0) + '%' : '-'], ['峰值 / 飽和', satM.peak > 0 ? (m.peak / satM.peak * 100).toFixed(1) + '%' : '-']]],
     ['磁通量', [['單極面積', Math.round(m.avgArea).toLocaleString() + ' G·°'], ['單極面積 / 飽和', satM.avgArea > 0 ? (m.avgArea / satM.avgArea * 100).toFixed(1) + '%' : '-'], ['N / S 單極面積', Math.round(m.areaN).toLocaleString() + ' / ' + Math.round(m.areaS).toLocaleString()], ['單極磁通（估）', flux], ['軛鐵磁通密度（估）', r.yokeB == null ? '無軛鐵' : r.yokeB.toFixed(2) + ' T']]],
@@ -659,7 +698,7 @@ function buildImage() {
   let gx = cx0 + 64, gy = top + 34 + ch + 30;
   const leg = (color, dash, label) => { x.strokeStyle = color; x.lineWidth = 2.2; x.setLineDash(dash); x.beginPath(); x.moveTo(gx, gy - 5); x.lineTo(gx + 28, gy - 5); x.stroke(); x.setLineDash([]); x.fillStyle = css('--muted'); x.font = F(15); x.textAlign = 'left'; x.fillText(label, gx + 36, gy); gx += 36 + x.measureText(label).width + 28; };
   leg(css('--accent'), [], '目前');
-  if ($('oSat').checked) leg(css('--ref'), [6, 4], '飽和參考（120 kAT）');
+  if ($('oSat').checked) leg(css('--ref'), [6, 4], '飽和參考（充飽 99%）');
   if (rn) leg(css('--accent2'), [2, 3], '充磁時不裝軛鐵');
   x.fillStyle = css('--accent'); x.globalAlpha = 0.18; x.fillRect(gx, gy - 12, 22, 12); x.globalAlpha = 1;
   x.fillStyle = css('--muted'); x.fillText('單極面積範圍', gx + 30, gy);
@@ -702,7 +741,7 @@ function fillSel(sel) {
   });
   if (sel) pSel.value = sel;
 }
-function snapshot() { const v = {}; ids.forEach(k => v[k] = $(k).value); v.ni = $('ni').value; return v; }
+function snapshot() { const v = {}; ids.forEach(k => v[k] = $(k).value); v.volt = $('volt').value; return v; }
 const armed = {};
 function arm(btn, key, label) {
   if (armed[key]) return true;
@@ -730,7 +769,8 @@ $('pLoad').addEventListener('click', () => {
   const p = presets.find(p => p.name === pSel.value);
   if (!p) { msg('請先選擇要載入的參數組', true); return; }
   ids.forEach(k => { if (p.v[k] != null) $(k).value = p.v[k]; });
-  if (p.v.ni != null) $('ni').value = p.v.ni;
+  if (p.v.vmax != null) $('volt').max = p.v.vmax;
+  if (p.v.volt != null) $('volt').value = p.v.volt; else if (p.v.ni != null) pendingNI = parseFloat(p.v.ni);
   pName.value = p.name; rebuild(); msg('已載入「' + p.name + '」');
 });
 $('pDel').addEventListener('click', () => {
@@ -762,7 +802,7 @@ $('pFile').addEventListener('change', e => {
         if (!p || typeof p.name !== 'string' || !p.v || typeof p.v !== 'object') return;
         migrate(p.v);
         const rec = { name: p.name.slice(0, 60), saved: p.saved || new Date().toISOString(), v: {} };
-        ids.concat('ni').forEach(k => { if (p.v[k] != null && isFinite(parseFloat(p.v[k]))) rec.v[k] = String(p.v[k]); });
+        ids.concat('volt', 'ni').forEach(k => { if (p.v[k] != null && isFinite(parseFloat(p.v[k]))) rec.v[k] = String(p.v[k]); });
         const i = presets.findIndex(q => q.name === rec.name);
         if (i >= 0) presets[i] = rec; else presets.push(rec); n++;
       });
@@ -976,11 +1016,11 @@ function dCurve(type) {
   }
   if (type === 'scurve') {
     const ox = 60, oy = 180, X = n => ox + n * 3.4, Y = v => oy - v * 150;
-    s += axes(ox, oy, 430, 165, '充磁強度 NI (kAT)', '');
+    s += axes(ox, oy, 430, 165, '充電電壓 (V)', '');
     s += P(poly(n => 1 - Math.exp(-Math.pow(n / 28, 1.7)), 0, 120, 120, X, Y), { c: '--accent', w: 2.2 });
     s += P(poly(n => 1 - Math.exp(-Math.pow(n / 55, 3.2)), 0, 120, 120, X, Y), { c: '--accent2', w: 2, d: '6 4' });
     s += T(X(72), Y(1.02) - 4, '峰值（左軸）', { c: '--accent', b: 1 }) + T(X(70), Y(0.55), '充飽體積比例（右軸）', { c: '--accent2', b: 1 });
-    s += Ln(X(60), oy, X(60), Y(1), { c: '--muted', d: '2 3' }) + T(X(60) + 4, oy - 6, '目前 NI', { fs: 11 });
+    s += Ln(X(60), oy, X(60), Y(1), { c: '--muted', d: '2 3' }) + T(X(60) + 4, oy - 6, '目前電壓', { fs: 11 });
     return svg(520, 225, s);
   }
   if (type === 'pulse') {
@@ -1073,13 +1113,13 @@ const H = {
   depth: { t: '導體中心距夾具表面', d: () => dSection('depth'), b: `<p>夾具槽內導線（或整束導線）的<strong>中心</strong>，到夾具表面的徑向距離。</p><ul><li>單根導線：槽口楔塊／絕緣厚度 + 導線半徑。</li><li>多匝疊在同一槽：取整束導線的重心。</li></ul><p>導線到磁環的總距離 = 夾具間隙 + 導體深度。導線越淺，充磁效率越高，但磁場集中在極邊界，波形偏平頂、欠充時易成馬鞍形；導線越深，磁場越平滑、越接近弦波，但需要更大的安匝數。</p>` },
   turns: { t: '每槽匝數', d: () => dSection('turns'), b: `<p>充磁夾具<strong>每個槽內的導線匝數 N</strong>。相鄰兩槽的電流方向相反（圖中 ⊙ 為流出紙面、⊗ 為流入），在兩槽之間形成一個磁極。</p><p>這個值只用來把安匝數換算成充磁機的峰值電流：I = NI / N，不影響波形計算。</p>` },
   ni: { t: '充磁強度 NI（每槽安匝）', d: () => dSection('turns') + dCurve('pulse'), b: `<p><strong>NI = 每槽匝數 N × 充磁峰值電流 I</strong>，單位 kAT（千安匝）。它代表夾具每一槽產生的總電流，是決定充磁磁場強弱的根本量。</p><p>選用安匝數而不是充磁電壓的原因：同一個 NI 就是同一台充磁機、同一次放電的輸出，有軛鐵和無軛鐵的結果才能公平比較。充磁電壓和 NI 的對應關係取決於電容、線圈電感與電阻，要用實測校正。</p>` },
-  rI: { t: '對應峰值電流', d: () => dCurve('pulse'), b: `<p>充磁機放電電流脈衝的<strong>峰值</strong>：I = NI / 每槽匝數。</p><p>用來對照充磁機的能力（最大允許電流），也可用來估算夾具導線的電磁力和溫升。</p>` },
+  rI: { t: '峰值電流 / NI', d: () => dCurve('pulse'), b: `<p><strong>峰值電流 I</strong>：充磁機在目前充電電壓下放電電流脈衝的最大值，由電容 C、迴路電感 L、電阻 R 計算（見「充電電壓」說明）。</p><p><strong>NI</strong> = 每槽匝數 × 峰值電流，單位 kAT（千安匝），是決定夾具充磁磁場強弱的根本量。</p><p>可用來對照充磁機的最大允許電流，以及估算夾具導線的電磁力與溫升。</p>` },
   rH: { t: '極中心內表面場強 μ0H', d: () => dSection('hcenter'), b: `<p>夾具在<strong>極中心、磁環內表面</strong>這一點產生的充磁磁場，以 μ0H（T）表示，並附 kOe 換算（1 T ≈ 10 kOe）。</p><p>它是整個磁環內比較具代表性的參考點：靠近導體（極邊緣）的場強更高，磁環深處（靠軛鐵側）更低。MQ 一般要約 3 × Hcj（例如 9 kOe 的材料約 2.7 T）才能接近完全飽和。</p>` },
   rS: { t: '已充飽體積（≥95%）', d: () => dCurve('init'), b: `<p>磁環截面中，磁化程度 <strong>M / Br ≥ 95%</strong> 的區域所佔比例（依截面積加權）。</p><p>表面峰值通常比這個比例更早飽和，因為表面磁場主要由靠近內表面的磁化決定；深處（靠軛鐵側）最後才充飽。要確保磁通量和長期穩定性，應以這個比例或單極面積判斷，而不是只看峰值。</p>` },
-  rP: { t: '峰值 / 飽和峰值', d: () => dWave('satref'), b: `<p>目前波形峰值 ÷ 飽和參考（120 kAT）波形峰值。</p><p>實務上常以「再增加 10% 充磁能量，峰值只增加 1–2% 以內」判定已飽和。這個比例接近 100% 時，代表再加大充磁也只有很小的效果。</p>` },
+  rP: { t: '峰值 / 飽和', d: () => dWave('satref'), b: `<p>目前波形峰值 ÷ 飽和參考（充飽 99%）波形峰值。</p><p>實務上常以「再增加 10% 充磁能量，峰值只增加 1–2% 以內」判定已飽和。表面峰值通常比磁環整體更早飽和，所以請同時參考「已充飽體積」與「單極面積 / 飽和」。</p>` },
   rE: { t: '充磁時軛鐵作用比例 η', d: () => dCurve('eta'), b: `<p>η = 軛鐵能承載的磁通（Bs × 厚度）÷ 理想導磁時軛鐵需要承載的充磁磁通。</p><ul><li>η = 100%：軛鐵未飽和，完整發揮把磁化方向拉成徑向的作用。</li><li>η 很小：軛鐵已深度飽和，充磁時表現得接近空氣，磁化方向接近不裝軛鐵的情況。</li></ul><p>大電流脈衝充磁時，薄軛鐵的 η 往往只有 10–30%。</p>` },
   bn: { t: '表面高斯波形 Bn', d: () => dSection('bn', { measure: true, pd: 52, cap: '量測狀態：探棒只量垂直表面（徑向）的分量' }) + dWave('bn'), b: `<p>探棒沿磁環內表面轉一圈，量到的<strong>徑向磁場分量 Bn</strong>對機械角的曲線，單位 Gauss（1 T = 10,000 G）。</p><ul><li>N 極為正、S 極為負；橫軸 0° = N 極起點（由負轉正的過零點）。</li><li>只量徑向分量：一般霍爾探棒的感測方向垂直於表面，切向分量不計入。</li></ul>` },
-  satref: { t: '飽和參考（120 kAT）', d: () => dWave('satref'), b: `<p>同一組幾何與材料，以 <strong>120 kAT</strong>（本工具滑桿的最大值）充磁所得的波形，作為「完全飽和」的參考。</p><p>目前波形與它的差距，就是還沒充飽的部分。如果你的幾何在 120 kAT 時「已充飽體積」仍明顯低於 100%，這條參考線就不算完全飽和。</p>` },
+  satref: { t: '飽和參考（充飽 99%）', d: () => dWave('satref'), b: `<p>同一組幾何與材料，以「<strong>已充飽體積達 99%</strong>」所需的安匝數充磁所得的波形，視為完全飽和的參考。</p><p>這個安匝數由程式自動搜尋，與充磁機能力無關；充磁強度列會顯示達到它約需的充電電壓。若超過「最高充電電壓」，代表這台充磁機（或這組夾具）無法把這顆磁環充飽。</p>` },
   compare: { t: '對照：充磁時不裝軛鐵', d: () => dWave('compare'), b: `<p>同樣的 NI，但<strong>充磁時不裝軛鐵</strong>（充完才裝上），量測時仍有軛鐵。</p><p>用來看軛鐵對「磁化方向」的影響：不裝軛鐵時，等方向性材料的磁化方向沿夾具的弧形磁力線，波形較圓滑；裝軛鐵時磁化較接近徑向，波形較平頂。軛鐵在充磁時若已深度飽和，兩條線會幾乎重疊。</p>` },
   mPk: { t: '峰值', d: () => dWave('peak'), b: `<p>整圈波形中 |Bn| 的<strong>最大值</strong>（G）。</p><p>平頂或牛角波形的峰值出現在極邊緣附近，不一定在極中心。峰值容易量測，但對充磁是否充飽不夠敏感，建議搭配單極面積一起判斷。</p>` },
   mC: { t: '極中心值', d: () => dWave('center'), b: `<p>每個極<strong>正中間</strong>位置（極起點 + 半個極的機械角，8 極時為 22.5°）的 |Bn|。</p><p>與峰值比較可以判斷波形的形狀：極中心值等於峰值代表弦波或平頂；明顯低於峰值代表中間凹陷。</p>` },
@@ -1088,11 +1128,16 @@ const H = {
   mT: { t: 'THD 總諧波失真', d: () => dWave('thd'), b: `<p><strong>THD = √(V3² + V5² + V7² + …) ÷ V1</strong>，即所有諧波振幅的方和根除以基波振幅（對稱磁極只有奇次諧波）。</p><ul><li>純弦波：0%。</li><li>梯形波：約 15–35%。</li><li>理想方波：約 48%。</li></ul><p>THD 越低越接近弦波，反電動勢越平滑、轉矩漣波與噪音通常越小。</p>` },
   mY: { t: '軛鐵磁通密度（估）', d: () => dSection('yokeflux'), b: `<p>使用狀態下軛鐵內的<strong>最大磁通密度</strong>估算值。</p><p>每極的磁通進入軛鐵後分成兩半，往左右相鄰的異極走，所以在<strong>極交界處</strong>軛鐵的周向磁通最大：B ≈ 單極磁通 / 2 ÷（軛鐵厚度 × 高度）。超過約 1.5 T 表示軛鐵開始飽和，內表面磁場會比計算值低。這是 2D 估算，未計軸向端部。</p>` },
   aA: { t: '單極面積（平均）', d: () => dWave('area'), b: `<p>一個極的波形在<strong>相鄰兩個過零點之間</strong>，對 |Bn| 做機械角積分：∫|Bn| dθ，單位 G·°。</p><p>這就是旋轉掃描式高斯計常用的「極面積」，與該極的總磁通成正比，比峰值更能反映磁鐵整體的磁量。顯示值為所有極的平均。</p>` },
-  aR: { t: '單極面積 / 飽和', d: () => dWave('aR'), b: `<p>目前的單極面積 ÷ 飽和參考（120 kAT）的單極面積。</p><p>判斷充飽與否時，面積比峰值更敏感：常見峰值已經達到 99%，面積卻只有 97–98%，差額來自尚未充飽的深處與極邊緣。</p>` },
+  aR: { t: '單極面積 / 飽和', d: () => dWave('aR'), b: `<p>目前的單極面積 ÷ 飽和參考（充飽 99%）的單極面積。</p><p>判斷充飽與否時，面積比峰值更敏感：常見峰值已經達到 99%，面積卻只有 97–98%，差額來自尚未充飽的深處與極邊緣。</p>` },
   aNS: { t: 'N / S 單極面積', d: () => dWave('ns'), b: `<p>所有 N 極與所有 S 極的單極面積<strong>各自的平均值</strong>。</p><p>實際產品中，N、S 不平衡常來自夾具公差、磁環偏心或充磁不足，是重要的品管指標。本模型假設完全對稱，所以兩者相同；比對實測時可用來觀察偏差。</p>` },
   aF: { t: '單極磁通（估）', d: () => dWave('area') + dSide(''), b: `<p>一個極穿過探棒所在圓柱面的<strong>總磁通</strong>估算值，單位 μWb：</p><p style="text-align:center"><strong>Φ ≈ 單極面積 × (π/180) × 探棒半徑 × 磁環高度</strong></p><p>這是以探棒高度處的波形代表整個軸向高度的粗估，端部漏磁會讓實際值略低。可用於估算反電動勢常數或比較不同方案。</p>` },
   presets: { t: '參數組', b: `<p>把目前左側所有參數與充磁強度存成一組，日後一鍵載入。</p><ul><li><strong>儲存：</strong>輸入名稱後按「儲存」；名稱已存在時會要求再按一次確認覆蓋。從下拉選單選一組時，名稱會自動帶入，方便修改後覆蓋。</li><li><strong>載入：</strong>選擇參數組後按「載入」，所有欄位與滑桿會一起還原。</li><li><strong>刪除：</strong>需再按一次確認。</li><li><strong>匯出／匯入檔案：</strong>把所有參數組存成 .json 檔，可用來備份、換電腦或分享給同事；匯入時同名的參數組會被覆蓋。</li></ul><p>參數組只存在<strong>你這台電腦的這個瀏覽器</strong>裡，不會上傳到任何伺服器，其他人看不到。清除瀏覽器資料或換瀏覽器後會消失，重要的參數請定期匯出備份。</p>` },
-  curve: { t: '峰值與充飽比例 vs 充磁強度', d: () => dCurve('scurve'), b: `<p>在固定幾何下，把 NI 從 0 掃到 120 kAT，畫出：</p><ul><li><strong>實線（左軸）：</strong>表面峰值（G）。</li><li><strong>虛線（右軸）：</strong>已充飽體積比例。</li></ul><p>兩條都是 S 形曲線。峰值較早趨平，充飽體積較晚；圓點為目前滑桿的位置。可用來決定充磁能量要加到多少才夠。</p>` },
+  volt: { t: '充電電壓（充磁強度）', d: () => dCurve('pulse'), b: `<p>充磁機電容的<strong>充電電壓 V</strong>，也就是實際操作充磁機時設定的值。滑桿範圍為 0 到「最高充電電壓」。</p><p>放電為 RLC 電路，峰值電流與電壓成正比：</p><p style="text-align:center"><strong>I<sub>pk</sub> = V × √(C/L) × e<sup>−α·t<sub>p</sub></sup></strong>（欠阻尼時；α = R / 2L）</p><p>所以 NI（= 每槽匝數 × I<sub>pk</sub>）與電壓<strong>線性</strong>成正比，但波形峰值與充飽程度經過 MQ 的 S 形初始充磁曲線後，對電壓是<strong>非線性</strong>的。放電能量 = ½CV²。</p><p>未計脈衝渦流與夾具溫升造成的電阻變化；請以實測校正 L、R。</p>` },
+  capC: { t: '電容 C', d: () => dCurve('pulse'), b: `<p>充磁機儲能電容的<strong>總電容量</strong>，單位 μF，可在充磁機銘牌或規格書查到。</p><p>電容越大，能量（½CV²）越大、脈衝越寬；在電感固定時，峰值電流約與 √C 成正比（欠阻尼時）。</p>` },
+  indL: { t: '迴路電感 L', d: () => dCurve('pulse'), b: `<p>放電迴路的<strong>總電感</strong>，單位 μH：主要是充磁夾具線圈的電感，加上電纜與充磁機內部電感。</p><p>電感越大，峰值電流越低、脈衝越寬。夾具電感可用 LCR 錶在低頻量測（實際脈衝時鐵心飽和，有效電感會比量測值低）。最準的做法是用電流探頭量一次實際峰值電流，再回推調整 L。</p>` },
+  resR: { t: '迴路電阻 R', d: () => dCurve('pulse'), b: `<p>放電迴路的<strong>總電阻</strong>，單位 mΩ：夾具線圈、電纜、接點與充磁機內部的電阻總和。</p><p>電阻造成能量損耗並降低峰值電流；電阻大到 R ≥ 2√(L/C) 時電流變成過阻尼（不振盪）。多次連續充磁後線圈溫度上升，電阻會變大。</p>` },
+  vmax: { t: '最高充電電壓', d: '', b: `<p>充磁機可設定的<strong>最高電壓</strong>，單位 V，作為充電電壓滑桿的上限。</p><p>充磁強度列會顯示「充飽 99% 約需多少 V」；若超過這個上限會以紅字標示，代表在目前的夾具與充磁機條件下，這顆磁環無法完全充飽。</p>` },
+  curve: { t: '峰值與充飽比例 vs 充電電壓', d: () => dCurve('scurve'), b: `<p>在固定幾何與充磁機條件下，把充電電壓從 0 掃到最高充電電壓，畫出：</p><ul><li><strong>實線（左軸）：</strong>表面峰值（G）。</li><li><strong>虛線（右軸）：</strong>已充飽體積比例。</li><li><strong>垂直點線：</strong>充飽 99% 所需電壓（在範圍內時才顯示）。</li></ul><p>峰值與電流成正比的充磁磁場，經過 MQ 的 S 形初始充磁曲線後，對電壓呈非線性：先慢、中段快、接近飽和後趨平。圓點為目前滑桿位置。</p>` },
   magmap: { t: '磁化方向分佈', d: () => dSection('', { arrows: true, cap: '箭頭 = 磁化方向；等方向性材料的磁化沿充磁磁力線' }), b: `<p>把<strong>一對極</strong>（一個 N、一個 S）的磁環截面展開成矩形：</p><ul><li>上方灰帶：軛鐵（外側）。</li><li>下方圓點：夾具槽內導體（內側）。</li><li>箭頭方向：磁化方向；長度與深淺：磁化程度 M / Br。</li></ul><p>等方向性材料沒有固定的易磁化方向，磁化方向會沿充磁時的磁力線。弧形排列（類 Halbach）會讓內側的波形較接近弦波；接近徑向的排列則波形較平頂。</p>` },
 };
 
