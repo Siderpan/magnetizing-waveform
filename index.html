@@ -117,7 +117,7 @@ h2{display:flex;align-items:center;gap:6px}
 </div>
 <div class="card"><h2>探棒位置</h2>
 <div class="f"><div class="lb"><label for="probeD">距磁環內表面 (mm)</label><button type="button" class="info" data-k="probeD" aria-label="說明：距磁環內表面 (mm)">?</button></div><input id="probeD" type="number" step="0.1" min="0" value="0.5"></div>
-<div class="f"><div class="lb"><label for="probeZ">軸向高度，自底面起 (mm)</label><button type="button" class="info" data-k="probeZ" aria-label="說明：軸向高度，自底面起 (mm)">?</button></div><input id="probeZ" type="number" step="0.1" min="0" value="5"></div>
+<div class="f"><div class="lb"><label for="probeDepth">軸向深度，自頂面往下 (mm)</label><button type="button" class="info" data-k="probeDepth" aria-label="說明：軸向深度，自頂面往下 (mm)">?</button></div><input id="probeDepth" type="number" step="0.1" min="0" value="5"></div>
 </div>
 <div class="card"><h2>材料</h2>
 <div class="f"><div class="lb"><label for="br">Br (T)</label><button type="button" class="info" data-k="br" aria-label="說明：Br (T)">?</button></div><input id="br" type="number" step="0.01" value="0.70"></div>
@@ -189,7 +189,7 @@ h2{display:flex;align-items:center;gap:6px}
 <li>軛鐵在量測時視為理想導磁；充磁時只能承載 Bs × 厚度的磁通，超過部分視同空氣，所以大電流時軛鐵的「拉直」作用會下降（見「充磁時軛鐵作用比例」）。</li>
 <li>MQ 初始充磁曲線：M/Br = 1 − exp(−(H/H0)^1.8)，H0 ≈ 1.33 Hcj（約 1 T 充到 50%、2 T 約 92%、3 T 約 99%）；磁化方向沿充磁磁場方向。</li>
 <li>量測時磁環內側為空氣（未裝定子）；寬極時波形偏平頂，欠充時磁化先從導體附近（極邊緣）開始，所以會出現馬鞍形或牛角。</li>
-<li>單極面積 = 相鄰兩過零點之間 |Bn| 對機械角的積分（G·°），即旋轉掃描式高斯計常用的「極面積」；單極磁通以探棒高度處的波形 × 探棒半徑 × 磁環高度粗估。</li>
+<li>單極面積 = 相鄰兩過零點之間 |Bn| 對機械角的積分（G·°），即旋轉掃描式高斯計常用的「極面積」；單極磁通以探棒所在深度處的波形 × 探棒半徑 × 磁環高度粗估。</li>
 <li>數值適合比較趨勢與方案，絕對值請以實測校正：飽和峰值用 Br 對齊，NI 與充磁電壓的對應用實測曲線對齊。</li>
 </ul>
 </div>
@@ -304,7 +304,7 @@ const MODEL = (() => {
       const hr = F[k] * n / Ry * 2 * Math.pow(Rf / Ry, n) / D * U; phi += hr * Ry * 2 / n * Math.sin(k * Math.PI / 2); });
       byu = Math.abs(phi) / 2 / g.ty; }
     // 量測格林係數（含軸向端部修正）：每層、每階、三個磁荷面
-    const rp = Ri - g.probeD, Ym = hasYoke ? 1 : 0, z1 = -g.probeZ, z2 = g.h - g.probeZ;
+    const rp = Ri - g.probeD, Ym = hasYoke ? 1 : 0, z1 = -(g.h - g.probeDepth), z2 = g.probeDepth;
     layers.forEach(L => {
       L.G = KS.map(k => {
         const n = k * p;
@@ -413,10 +413,12 @@ if (typeof module !== 'undefined') module.exports = MODEL;
 </script>
 <script>
 (() => {
-const ids = ['poles','id','od','h','ty','gap','bs','probeD','probeZ','br','hcj','fixGap','depth','turns'];
+const ids = ['poles','id','od','h','ty','gap','bs','probeD','probeDepth','br','hcj','fixGap','depth','turns'];
+// 舊資料相容：probeZ（自底面高度）→ probeDepth（自頂面深度）
+const migrate = o => { if (o && o.probeDepth == null && o.probeZ != null) { const h = parseFloat(o.h ?? 10), z = parseFloat(o.probeZ); if (isFinite(h) && isFinite(z)) o.probeDepth = String(+(h - z).toFixed(4)); } delete o?.probeZ; return o; };
 const $ = id => document.getElementById(id);
 const NI_SAT = 120000;
-try { const s = JSON.parse(localStorage.getItem('mqwave2') || 'null'); if (s) { ids.forEach(k => { if (s[k] != null) $(k).value = s[k]; }); if (s.ni != null) $('ni').value = s.ni; } } catch (e) {}
+try { const s = migrate(JSON.parse(localStorage.getItem('mqwave2') || 'null')); if (s) { ids.forEach(k => { if (s[k] != null) $(k).value = s[k]; }); if (s.ni != null) $('ni').value = s.ni; } } catch (e) {}
 let state = null;
 
 function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
@@ -429,7 +431,7 @@ function read() {
   if (!(v.ty >= 0)) e.push('軛鐵厚度須 ≥ 0');
   if (!(v.gap >= 0)) e.push('軛鐵間隙須 ≥ 0');
   if (!(v.probeD >= 0) || v.probeD >= v.id / 2) e.push('探棒距離須 ≥ 0 且小於內半徑');
-  if (!(v.probeZ >= 0) || v.probeZ > v.h) e.push('探棒軸向位置須在 0 到高度之間');
+  if (!(v.probeDepth >= 0) || v.probeDepth > v.h) e.push('探棒軸向深度須在 0 到磁環高度之間');
   if (!(v.br > 0)) e.push('Br 須 > 0');
   if (!(v.hcj > 0)) e.push('Hcj 須 > 0');
   if (!(v.fixGap >= 0) || v.fixGap >= v.id / 2) e.push('夾具間隙須 ≥ 0 且小於內半徑');
@@ -452,7 +454,7 @@ function rebuild() {
   const { v, e } = read();
   $('err').innerHTML = e.join('<br>');
   if (e.length) { state = null; return; }
-  const g = { poles: v.poles, id: v.id, od: v.od, h: v.h, ty: v.ty, gap: v.gap, bs: v.bs, probeD: v.probeD, probeZ: v.probeZ, fixGap: v.fixGap, depth: v.depth };
+  const g = { poles: v.poles, id: v.id, od: v.od, h: v.h, ty: v.ty, gap: v.gap, bs: v.bs, probeD: v.probeD, probeDepth: v.probeDepth, fixGap: v.fixGap, depth: v.depth };
   const mat = { br: v.br, hcj: v.hcj };
   const pre = MODEL.prepare(g, true);
   const preNo = v.ty > 0 ? MODEL.prepare(g, false) : null;
@@ -629,7 +631,7 @@ function buildImage() {
   const sec = [
     ['磁環', [['極數', v.poles], ['內徑 / 外徑', v.id + ' / ' + v.od + ' mm'], ['高度', v.h + ' mm']]],
     ['軛鐵', v.ty > 0 ? [['厚度 / 間隙', v.ty + ' / ' + v.gap + ' mm'], ['Bs', v.bs + ' T']] : [['軛鐵', '無']]],
-    ['探棒', [['距內表面 / 軸向高度', v.probeD + ' / ' + v.probeZ + ' mm']]],
+    ['探棒', [['距內表面 / 自頂面深度', v.probeD + ' / ' + v.probeDepth + ' mm']]],
     ['材料', [['Br / Hcj', v.br + ' T / ' + v.hcj + ' kOe']]],
     ['充磁夾具', [['夾具間隙 / 導體深度', v.fixGap + ' / ' + v.depth + ' mm'], ['每槽匝數', v.turns]]],
     ['充磁', [['NI / 峰值電流', (ni / 1000).toFixed(1) + ' kAT / ' + (ni / v.turns / 1000).toFixed(2) + ' kA'], ['極中心場強', r.hCenter.toFixed(2) + ' T'], ['已充飽體積', (r.satFrac * 100).toFixed(0) + '%'], ['充磁時軛鐵作用', v.ty > 0 ? (r.eta * 100).toFixed(0) + '%' : '無軛鐵']]],
@@ -690,7 +692,7 @@ window.__buildImage = buildImage;
 const PK = 'gaussPresets';
 const pSel = $('pSel'), pName = $('pName'), pMsg = $('pMsg');
 let presets = [];
-try { presets = JSON.parse(localStorage.getItem(PK) || '[]'); if (!Array.isArray(presets)) presets = []; } catch (e) { presets = []; }
+try { presets = JSON.parse(localStorage.getItem(PK) || '[]'); if (!Array.isArray(presets)) presets = []; presets.forEach(p => p && p.v && migrate(p.v)); } catch (e) { presets = []; }
 const persist = () => { try { localStorage.setItem(PK, JSON.stringify(presets)); return true; } catch (e) { return false; } };
 const msg = (t, err) => { pMsg.textContent = t; pMsg.className = 'pmsg' + (err ? ' e' : ''); };
 function fillSel(sel) {
@@ -758,6 +760,7 @@ $('pFile').addEventListener('change', e => {
       let n = 0;
       list.forEach(p => {
         if (!p || typeof p.name !== 'string' || !p.v || typeof p.v !== 'object') return;
+        migrate(p.v);
         const rec = { name: p.name.slice(0, 60), saved: p.saved || new Date().toISOString(), v: {} };
         ids.concat('ni').forEach(k => { if (p.v[k] != null && isFinite(parseFloat(p.v[k]))) rec.v[k] = String(p.v[k]); });
         const i = presets.findIndex(q => q.name === rec.name);
@@ -925,12 +928,12 @@ function dSide(hl) {
   const top = 30, bot = 190, xm = 250, wm = 40;
   s += R(xm, top, wm, bot - top, '--nfill') + R(xm + wm + 3, top, 14, bot - top, '--iron');
   s += T(xm + wm / 2, top - 8, '磁環', { a: 'middle', fs: 11 }) + T(xm + wm + 10, top - 8, '軛鐵', { a: 'middle', fs: 11 });
-  s += Ln(150, bot, 360, bot, { c: '--muted', d: '4 3' }) + T(366, bot + 4, '磁環底面');
+  s += Ln(150, top, 360, top, { c: '--muted', d: '4 3' }) + T(366, top + 4, '磁環頂面');
   const pz = 120;
-  s += R(xm - 22, pz - 4, 12, 8, hl === 'probeZ' ? '--accent' : '--muted') + Ln(xm - 22, pz, 160, pz, { c: '--muted', w: 3 });
+  s += R(xm - 22, pz - 4, 12, 8, hl === 'probeDepth' ? '--accent' : '--muted') + Ln(xm - 22, pz, 160, pz, { c: '--muted', w: 3 });
   s += T(150, pz - 10, '探棒', { fs: 11 });
   if (hl === 'h') s += dim(xm + wm + 40, top, xm + wm + 40, bot, '高度 h', { a: 'start', lx: xm + wm + 48 });
-  if (hl === 'probeZ') s += dim(200, pz, 200, bot, '軸向位置 z', { a: 'end', lx: 194 });
+  if (hl === 'probeDepth') s += dim(200, top, 200, pz, '軸向深度', { a: 'end', lx: 194 });
   s += T(150, 214, '側視：沿半徑方向切開的截面（左側為磁環內孔）', { fs: 11 });
   return svg(520, 224, s);
 }
@@ -1063,7 +1066,7 @@ const H = {
   gap: { t: '軛鐵與磁環間隙', d: () => dSection('gap'), b: `<p>磁環外圓與軛鐵內圓之間的<strong>徑向間隙</strong>，例如膠層厚度或配合間隙。</p><p>間隙相當於在磁路中串入空氣，間隙越大，軛鐵提高磁場、拉直磁化方向的效果越弱。一般膠合約 0.02–0.1 mm。</p>` },
   bs: { t: '軛鐵飽和磁通密度 Bs', d: () => dCurve('bs'), b: `<p>軛鐵材料能承載的<strong>最大磁通密度</strong>。超過 Bs 後，材料的導磁率急速下降，表現得接近空氣。</p><ul><li>低碳鋼（SPCC、SECC 等）約 1.8–2.1 T。</li><li>矽鋼片約 1.9–2.0 T。</li></ul><p>脈衝充磁時磁環內的磁場高達 2–3 T 以上，軛鐵通常會深度飽和。模型用 Bs × 厚度限制軛鐵在充磁時能承載的磁通，見「充磁時軛鐵作用比例」。</p>` },
   probeD: { t: '探棒距磁環內表面', d: () => dSection('probeD', { measure: true, pd: 36, cap: '量測狀態：夾具已移除，探棒在磁環內側空氣中' }), b: `<p>高斯計探棒內<strong>霍爾元件感測中心</strong>到磁環內表面的徑向距離。</p><p>注意：探棒本身有外殼或保護層，貼緊磁環量測時，感測中心離表面通常仍有 0.3–0.8 mm（依探棒規格）。這個值要填感測中心的距離，不是外殼的距離。</p><p>距離越大，高次諧波衰減越快：峰值下降，波形變圓、牛角變淺。</p>` },
-  probeZ: { t: '探棒軸向高度', d: () => dSide('probeZ'), b: `<p>探棒感測中心離<strong>磁環底面</strong>的軸向距離，範圍 0 到磁環高度。</p><p>放在中間高度（高度 / 2）讀值最高；越靠近上下端面，端部漏磁越多，讀值越低。比對實測時，請填量測治具實際的探棒高度。</p>` },
+  probeDepth: { t: '探棒軸向深度', d: () => dSide('probeDepth'), b: `<p>探棒感測中心離<strong>磁環頂面</strong>往下的軸向距離，範圍 0 到磁環高度。</p><p>放在中間（深度 = 高度 / 2）讀值最高；越靠近上下端面，端部漏磁越多，讀值越低。比對實測時，請填量測治具實際的探棒插入深度。</p><p>本模型上下對稱，所以深度 d 與 高度 − d 的結果相同。</p>` },
   br: { t: 'Br 剩磁', d: () => dCurve('demag'), b: `<p><strong>剩磁 Br</strong>：磁鐵充飽磁後，外加磁場降為 0 時保留的磁通密度，代表材料「能提供多少磁」。</p><ul><li>MQ 等方向性黏結磁：壓縮成型約 0.6–0.72 T，射出成型約 0.4–0.6 T（依牌號與磁粉填充率）。</li></ul><p>模型中，磁環充飽處的磁化強度 = Br，所以表面磁場大致與 Br 成正比。用實測的飽和峰值反推並調整 Br，是校正模型最簡單的方式。</p>` },
   hcj: { t: 'Hcj 內稟矯頑力', d: () => dCurve('demag') + dCurve('init'), b: `<p><strong>內稟矯頑力 Hcj</strong>：在反向磁場下，讓材料的磁化強度 J 降為 0 所需的磁場，代表抗退磁能力。單位 kOe（1 kOe ≈ 79.6 kA/m，在空氣中約相當於 0.1 T）。</p><ul><li>與 Hcb 不同：Hcb 是讓 B（磁通密度）降為 0 的磁場，數值較小。</li><li>MQP-B 約 9 kOe；高矯頑力牌號可達 15 kOe 以上。</li></ul><p>Hcj 越高，越難退磁，<strong>也越難充磁</strong>。本模型的初始充磁曲線以 Hcj 為尺度：約 1.33 × Hcj 時充到 63%，約 3 × Hcj 時接近飽和（下圖）。</p>` },
   fixGap: { t: '夾具與磁環間隙', d: () => dSection('fixGap'), b: `<p>充磁夾具外表面（面向磁環的那一面）到磁環內表面的<strong>徑向間隙</strong>，就是套入時的配合間隙。</p><p>間隙越大，磁環所受的充磁磁場越弱、越平滑。實務上通常約 0.05–0.2 mm；填 0 代表完全貼合。</p>` },
