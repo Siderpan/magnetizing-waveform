@@ -80,6 +80,15 @@ h2{display:flex;align-items:center;gap:6px}
 .wreads .m .v{font-size:19px}
 .sm{font-size:13px;color:var(--muted);font-weight:400}
 @media (max-width:700px){.nibar .reads{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+.kvgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px}
+.kvg{background:var(--chip);border-radius:8px;padding:8px 14px 6px}
+.kvt{font-size:13.5px;color:var(--muted);font-weight:500;padding:2px 0 6px;border-bottom:1px solid var(--line)}
+.kv{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)}
+.kv:last-child{border-bottom:none}
+.kv .k{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:15px;white-space:nowrap}
+.kv .val{font-size:18px;font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right}
+.kv .val.warn{color:var(--err)}
 </style>
 </head>
 <body>
@@ -146,17 +155,21 @@ h2{display:flex;align-items:center;gap:6px}
 <label><input type="checkbox" id="oNo"><span class="leg" style="border-top:2px dotted var(--accent2)"></span>對照：充磁時不裝軛鐵</label><button type="button" class="info" data-k="compare" aria-label="說明：充磁時不裝軛鐵">?</button>
 <label>顯示範圍 <select id="oRange" style="height:26px;border:1px solid var(--line2);border-radius:6px;background:transparent;color:var(--text)"><option value="all">全周 360°</option><option value="pair">一對極</option></select></label>
 </div>
-<div class="reads wreads">
-<div class="m"><div class="l">峰值<button type="button" class="info" data-k="mPk" aria-label="說明：峰值">?</button></div><div class="v" id="mPk">-</div></div>
-<div class="m"><div class="l">極中心值<button type="button" class="info" data-k="mC" aria-label="說明：極中心值">?</button></div><div class="v" id="mC">-</div></div>
-<div class="m"><div class="l">極中心 / 峰值<button type="button" class="info" data-k="mH" aria-label="說明：極中心 / 峰值">?</button></div><div class="v" id="mH">-</div></div>
-<div class="m"><div class="l">基波振幅<button type="button" class="info" data-k="m1" aria-label="說明：基波振幅">?</button></div><div class="v" id="m1">-</div></div>
-<div class="m"><div class="l">THD<button type="button" class="info" data-k="mT" aria-label="說明：THD">?</button></div><div class="v" id="mT">-</div></div>
-<div class="m"><div class="l">軛鐵磁通密度（估）<button type="button" class="info" data-k="mY" aria-label="說明：軛鐵磁通密度（估）">?</button></div><div class="v" id="mY">-</div></div>
-<div class="m"><div class="l">單極面積（平均）<button type="button" class="info" data-k="aA" aria-label="說明：單極面積（平均）">?</button></div><div class="v" id="aA">-</div></div>
-<div class="m"><div class="l">單極面積 / 飽和<button type="button" class="info" data-k="aR" aria-label="說明：單極面積 / 飽和">?</button></div><div class="v" id="aR">-</div></div>
-<div class="m"><div class="l">N / S 單極面積<button type="button" class="info" data-k="aNS" aria-label="說明：N / S 單極面積">?</button></div><div class="v" id="aNS">-</div></div>
-<div class="m"><div class="l">單極磁通（估）<button type="button" class="info" data-k="aF" aria-label="說明：單極磁通（估）">?</button></div><div class="v" id="aF">-</div></div>
+<div class="kvgrid">
+<div class="kvg"><div class="kvt">波形</div>
+<div class="kv"><span class="k">峰值<button type="button" class="info" data-k="mPk" aria-label="說明：峰值">?</button></span><span class="val" id="mPk">-</span></div>
+<div class="kv"><span class="k">極中心值<button type="button" class="info" data-k="mC" aria-label="說明：極中心值">?</button></span><span class="val" id="mC">-</span></div>
+<div class="kv"><span class="k">極中心 / 峰值<button type="button" class="info" data-k="mH" aria-label="說明：極中心 / 峰值">?</button></span><span class="val" id="mH">-</span></div>
+<div class="kv"><span class="k">基波振幅<button type="button" class="info" data-k="m1" aria-label="說明：基波振幅">?</button></span><span class="val" id="m1">-</span></div>
+<div class="kv"><span class="k">THD<button type="button" class="info" data-k="mT" aria-label="說明：THD">?</button></span><span class="val" id="mT">-</span></div>
+</div>
+<div class="kvg"><div class="kvt">磁通量</div>
+<div class="kv"><span class="k">單極面積（平均）<button type="button" class="info" data-k="aA" aria-label="說明：單極面積（平均）">?</button></span><span class="val" id="aA">-</span></div>
+<div class="kv"><span class="k">單極面積 / 飽和<button type="button" class="info" data-k="aR" aria-label="說明：單極面積 / 飽和">?</button></span><span class="val" id="aR">-</span></div>
+<div class="kv"><span class="k">N / S 單極面積<button type="button" class="info" data-k="aNS" aria-label="說明：N / S 單極面積">?</button></span><span class="val" id="aNS">-</span></div>
+<div class="kv"><span class="k">單極磁通（估）<button type="button" class="info" data-k="aF" aria-label="說明：單極磁通（估）">?</button></span><span class="val" id="aF">-</span></div>
+<div class="kv"><span class="k">軛鐵磁通密度（估）<button type="button" class="info" data-k="mY" aria-label="說明：軛鐵磁通密度（估）">?</button></span><span class="val" id="mY">-</span></div>
+</div>
 </div>
 <div class="opts"><span><span class="leg" style="height:10px;background:var(--accent);opacity:.18;border-radius:2px"></span>陰影 = 單極面積範圍（相鄰兩過零點之間 ∫|Bn|dθ）；0° 為 N 極起點</span></div>
 </div>
@@ -467,12 +480,12 @@ function update() {
   $('rP').textContent = satM.peak > 0 ? (m.peak / satM.peak * 100).toFixed(1) + '%' : '-';
   $('mPk').textContent = m.peak.toFixed(0) + ' G';
   $('mC').textContent = m.center.toFixed(0) + ' G';
-  $('mH').textContent = m.peak > 1 ? m.horn.toFixed(2) + (m.horn < 0.9 ? '（牛角）' : m.horn < 0.97 ? '（微凹）' : '') : '-';
+  $('mH').innerHTML = m.peak > 1 ? m.horn.toFixed(2) + (m.horn < 0.9 ? ' <span class="sm">牛角</span>' : m.horn < 0.97 ? ' <span class="sm">微凹</span>' : '') : '-';
   $('m1').textContent = m.h1.toFixed(0) + ' G';
   $('mT').textContent = m.peak > 1 ? (m.thd * 100).toFixed(0) + '%' : '-';
   const yb = $('mY');
-  if (r.yokeB == null) { yb.textContent = '無軛鐵'; yb.className = 'v'; }
-  else { yb.textContent = r.yokeB.toFixed(2) + ' T' + (r.yokeB > 1.5 ? '（偏高，易飽和）' : ''); yb.className = 'v' + (r.yokeB > 1.5 ? ' warn' : ''); }
+  if (r.yokeB == null) { yb.textContent = '無軛鐵'; yb.className = 'val'; }
+  else { yb.textContent = r.yokeB.toFixed(2) + ' T' + (r.yokeB > 1.5 ? '（偏高，易飽和）' : ''); yb.className = 'val' + (r.yokeB > 1.5 ? ' warn' : ''); }
   $('aA').textContent = m.avgArea > 0 ? Math.round(m.avgArea).toLocaleString() + ' G·°' : '-';
   $('aR').textContent = satM.avgArea > 0 ? (m.avgArea / satM.avgArea * 100).toFixed(1) + '%' : '-';
   $('aNS').textContent = m.areaN > 0 ? Math.round(m.areaN).toLocaleString() + ' / ' + Math.round(m.areaS).toLocaleString() : '-';
